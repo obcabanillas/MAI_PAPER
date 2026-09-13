@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Machine-specific path to the data tree (see code_paper/README.md)
+mai_base.txt
+
 # Credentials - never commit
 client_secret.json
 *.pem

@@ -1,20 +1,54 @@
 """
-Single place where every path in the NTL processing chain is defined.
+Single place where every path in the analysis is defined.
 
-BASE is resolved two levels up from this file (code_paper/NTL_processing ->
-MarketActivityIndex), so the package works wherever the MarketActivityIndex
-folder is placed, as long as the internal layout is preserved. Override it by
-setting the MAI_BASE environment variable.
+The code lives in this repository; the data does not. So BASE - the
+MarketActivityIndex folder holding data/, processed_data/ and output_paper/ -
+has to be pointed at explicitly. It is resolved in this order:
+
+  1. the MAI_BASE environment variable, if set;
+  2. the path written in mai_base.txt next to this file (git-ignored, so each
+     machine can keep its own);
+  3. two levels up from this file, which is the right answer only when the code
+     sits inside the MarketActivityIndex folder itself.
+
+If the result does not contain a data/ folder, this module raises rather than
+letting the scripts run against silently wrong paths.
 """
 import os
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+_POINTER = os.path.join(_HERE, "mai_base.txt")
 
-BASE = os.environ.get("MAI_BASE") or os.path.abspath(os.path.join(_HERE, "..", ".."))
+
+def _resolve_base():
+    env = os.environ.get("MAI_BASE")
+    if env:
+        return os.path.abspath(os.path.expanduser(env.strip())), "MAI_BASE"
+    if os.path.exists(_POINTER):
+        with open(_POINTER, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    return os.path.abspath(os.path.expanduser(line)), "mai_base.txt"
+    return os.path.abspath(os.path.join(_HERE, "..", "..")), "location of config.py"
+
+
+BASE, _BASE_SOURCE = _resolve_base()
 
 DATA = os.path.join(BASE, "data")
 PROCESSED = os.path.join(BASE, "processed_data")
 OUTPUT = os.path.join(BASE, "output_paper")
+
+if not os.path.isdir(DATA):
+    raise RuntimeError(
+        "Could not find the MAI data tree.\n"
+        "  BASE resolved to : %s\n"
+        "  (from            : %s)\n"
+        "  Expected a 'data' folder inside it.\n\n"
+        "Point the code at the MarketActivityIndex folder by either\n"
+        "  setting the MAI_BASE environment variable, or\n"
+        "  writing that path on one line in %s" % (BASE, _BASE_SOURCE, _POINTER)
+    )
 
 # Monthly VIIRS avg_rad rasters (afg_viirs_YYYYMM.tif), cropped to Afghanistan.
 # EXTERNAL INPUT - not produced by any script in this folder. See README.

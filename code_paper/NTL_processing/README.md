@@ -1,8 +1,14 @@
 # NTL_processing
 
 Everything that turns raw VIIRS nighttime-lights imagery into the market-level
-light measures used in the paper. Run the scripts in numerical order. All paths
-live in `config.py` — that is the only file to edit when the folder moves.
+light measures used in the paper. Run the scripts in numerical order.
+
+All paths derive from one value, `BASE`, resolved in `config.py` from the
+`MAI_BASE` environment variable, else from `mai_base.txt` next to it (one line,
+git-ignored, holding the absolute path to the MarketActivityIndex folder), else
+from the location of `config.py` itself. The code lives in this repository and
+the data does not, so on a new machine create `mai_base.txt` before running
+anything — `config.py` raises a clear error if `BASE` has no `data/` folder.
 
 ## The measure
 
