@@ -1,18 +1,10 @@
 """
 Single place where every path in the analysis is defined.
 
-The code lives in this repository; the data does not. So BASE - the
-MarketActivityIndex folder holding data/, processed_data/ and output_paper/ -
-has to be pointed at explicitly. It is resolved in this order:
-
-  1. the MAI_BASE environment variable, if set;
-  2. the path written in mai_base.txt next to this file (git-ignored, so each
-     machine can keep its own);
-  3. two levels up from this file, which is the right answer only when the code
-     sits inside the MarketActivityIndex folder itself.
-
-If the result does not contain a data/ folder, this module raises rather than
-letting the scripts run against silently wrong paths.
+The code lives wherever this file is (code_paper/NTL_processing), but the data
+and outputs live in a separate location. BASE is the data/output root and
+defaults to the shared OneDrive MarketActivityIndex folder. Override it by
+setting the MAI_BASE environment variable.
 """
 import os
 
