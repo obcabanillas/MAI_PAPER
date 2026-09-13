@@ -1,16 +1,17 @@
 """
 Single place where every path in the NTL processing chain is defined.
 
-BASE is resolved two levels up from this file (code_paper/NTL_processing ->
-MarketActivityIndex), so the package works wherever the MarketActivityIndex
-folder is placed, as long as the internal layout is preserved. Override it by
+The code lives wherever this file is (code_paper/NTL_processing), but the data
+and outputs live in a separate location. BASE is the data/output root and
+defaults to the shared OneDrive MarketActivityIndex folder. Override it by
 setting the MAI_BASE environment variable.
 """
 import os
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
-BASE = os.environ.get("MAI_BASE") or os.path.abspath(os.path.join(_HERE, "..", ".."))
+BASE = os.environ.get("MAI_BASE") or \
+    r"C:\Users\wb434633\WBG\Christina Wieser - Afghanistan\Geospatial information\MarketActivityIndex"
 
 DATA = os.path.join(BASE, "data")
 PROCESSED = os.path.join(BASE, "processed_data")
