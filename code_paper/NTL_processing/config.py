@@ -74,3 +74,5 @@ MAX_RAD_CAP = 300.0
 
 for _d in (PROCESSED, OUTPUT, WORK_DIR):
     os.makedirs(_d, exist_ok=True)
+
+    
