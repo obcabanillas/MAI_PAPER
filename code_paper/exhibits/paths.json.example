@@ -1,0 +1,10 @@
+{
+  "_comment": [
+    "Copy to paths.json to pin input locations explicitly. Everything is optional:",
+    "anything not listed is searched for under ROOTS (and under $MAI_ROOT).",
+    "Keys are the names printed by `python common.py`."
+  ],
+  "ROOTS": ["/path/to/MAI_AFG", "/path/to/replication"],
+  "PANEL": "/path/to/derived/periodict_act.csv",
+  "NDVI_MKT": "/path/to/data_external/ndvi/NDVI_markted.csv"
+}

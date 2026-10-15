@@ -5,6 +5,11 @@ __pycache__/
 
 # Machine-specific path to the data tree (see code_paper/README.md)
 mai_base.txt
+code_paper/exhibits/paths.json
+
+# Generated locally (outputs belong in output_paper/, not here)
+code_paper/exhibits/out/
+*.log
 
 # Credentials - never commit
 client_secret.json

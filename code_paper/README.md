@@ -1,114 +1,86 @@
 # code_paper
 
-Code for the figures and regressions in the Afghanistan market-activity paper.
+All the code that produces the tables, figures and numbers in the Afghanistan periodic-markets paper
+(`document/AFG_paper_revised.docx`). The code lives in this repository. The data and the outputs do
+not: they stay in the MarketActivityIndex folder on OneDrive/Box.
 
 ```
 code_paper/
-  NTL_processing/            VIIRS -> market-level nighttime lights (own README)
-  build_event_study_panel.py builds the analysis panel from the NTL output + covariates
-  Results_paper.ipynb        all figures and regressions in the paper
-```
-
-The code lives in this repository. The data does not — it stays in the
-MarketActivityIndex folder on Box, which also holds the outputs:
-
-```
-MarketActivityIndex/
-  data/                      raw inputs (VIIRS rasters, market lists, ACLED, ...)
-  processed_data/            analysis-ready data - no figures, no results
-  output_paper/
-    event_study/             final regression workbook and coefficient figure
-    figures/                 CDF figures
+  NTL_processing/              VIIRS rasters -> nighttime lights in 10 km market buffers (own README); config.py
+  NDVI_processing/             district NDVI for the event-study panel (own README)
+  data_build/build_derived.py  raw data -> the derived market panel, access categories and market NDVI
+  build_event_study_panel.ipynb  the market-year panel for the event study (processed_data/event_study_panel.dta)
+  exhibits/                    most figures and tables, and paper_checks.py (every number in the text)
+  stata/run_event_study_ACCESS.do  Figures 10b-d and 11, the event study
+  ActivityLevelsCehcks..ipynb  field validation (Table 1, Figure A.3) and seasonality (Figure 7)
+  Results_paper.ipynb          nighttime-light distribution by access (Figure 5b-c)
+  Results_paper_stats.ipynb    descriptive statistics and Figure 8
+  figure4_population_coverage.py  Figure 4a (needs the detection team's Earth Engine assets)
+  A1_ndvi_mai_regression.ipynb NDVI-MAI market-year regression (not in the current draft)
 ```
 
 ## Pointing the code at the data
 
-Every path is derived from one value, `BASE`, resolved in `NTL_processing/config.py`:
+Every path comes from `BASE`, resolved in `NTL_processing/config.py`: the `MAI_BASE` environment variable,
+else the one-line file `NTL_processing/mai_base.txt` (git-ignored, one per machine), else two folders above
+`config.py`. `BASE` is the MarketActivityIndex folder:
 
-1. the `MAI_BASE` environment variable, if set;
-2. the path in `NTL_processing/mai_base.txt` — one line, git-ignored, so each
-   machine keeps its own;
-3. two levels up from `config.py`, which is only right if the code sits inside
-   the MarketActivityIndex folder.
+```
+MarketActivityIndex/
+  data/                          raw inputs (activity file, market registry, WFP validation, VIIRS, ACLED, ...)
+  processed_data/                analysis-ready data written by the code (incl. derived/ from data_build)
+  document/Repo_09042026/data/   the inputs exhibits/ reads (derived panel, NDVI, boundaries, nightlights, ...)
+  output_paper/                  everything the code writes: exhibits/, figures/, seasonality/,
+                                 market_day_validation/, event_study/, tables/
+```
 
-If the resolved `BASE` has no `data/` folder, `config.py` raises instead of
-letting the scripts run against wrong paths. On a new machine, create
-`mai_base.txt` containing the absolute path to the MarketActivityIndex folder.
+`exhibits/` finds its inputs through `config.py` as well (see `exhibits/common.py`); `exhibits/paths.json`
+can pin individual files. Python 3.10 (the `py310` environment) with pandas, numpy, statsmodels, scipy,
+matplotlib, seaborn, geopandas, shapely, rasterio, rasterstats, pyproj, openpyxl and xlrd. Stata 19 with
+`reghdfe`, `ftools`, `coefplot` and `outreg2` for the event study.
 
 ## Order to run
 
-1. `NTL_processing/01` … `06` — see `NTL_processing/README.md`. Produces the
-   three NTL files in `processed_data/`.
-2. `python build_event_study_panel.py` — joins the periodic-market nighttime
-   lights to market activity, conflict, NDVI and population, and writes
-   `processed_data/event_study_panel.dta` (and `.csv`).
-3. Open `Results_paper.ipynb` and run all cells.
-
-Steps 1 and 2 only need rerunning if the underlying data changes. The notebook
-reads `processed_data/` and is self-contained apart from Section 3, which reads
-the monthly VIIRS rasters once to compute the Kabul reference value and then
-caches it.
-
-## What the notebook produces
-
-| Section | Output |
-|---|---|
-| 3 | Kabul reference light value, cached to `processed_data/kabul_reference_10km_bnr.csv` |
-| 4 | `output_paper/figures/cdf_nighttime_light_{2018,2025}_periodic_vs_osm.png` |
-| 5-6 | `output_paper/event_study/AFG_event_study_models_EVERLIT.xlsx` and `event_study_everlit_figure.png` |
-
-## Reading the CDF figures
-
-The horizontal axis is the median monthly **total radiance summed over the
-10 km buffer**, on a log scale. Because a sum scales with buffer area, the
-Kabul reference is computed on the same 10 km buffer; the notebook also
-computes and caches the per-pixel mean alongside it, so switching the axis to a
-mean is a one-line change in `draw_cdf`.
-
-Each curve **starts at the share of markets with any light** and accumulates
-from there across the lit markets' brightness, reaching 100% at the brightest
-market. Dark markets carry no brightness information, so they set the starting
-height and are not placed on the horizontal axis. A vertical riser carries each
-curve down to the x-axis at its leftmost value, so the lines never run into the
-y-axis.
-
-The axis starts at zero on the log scale, i.e. a buffer total of 1. The handful
-of lit markets dimmer than that are clipped to the left edge (`FLOOR` in the
-notebook), which lifts the visible starting height marginally above the
-positive-light share: 58.6% against 56.9% for periodic markets in 2018, 74.8%
-against 73.7% in 2025, 48.9% against 47.7% and 59.0% against 58.7% for OSM-only.
-Both numbers print when the cell runs. Setting `FLOOR = 0` and letting the axis
-start at the true minimum makes the curve start exactly at the positive-light
-share, at the cost of an axis that begins near −1.2 rather than 0.
-
-The dashed line is the same measure computed for a 10 km buffer on Kabul city
-centre (`config.KABUL_LON/LAT`, 69.1783 E / 34.5253 N), for the same year.
-
-## The three event-study models
-
-Year dummies (2020 omitted) interacted with three time-invariant baseline
-characteristics — once-a-week trading, distance to the nearest OSM market, log
-catchment population — with market and year fixed effects, standard errors
-clustered by district, and two time-varying controls (log district deaths per
-100,000 and growing-season NDVI deviation).
-
-| Model | Sample | Outcome |
+| Step | Command | Writes |
 |---|---|---|
-| A | all 137 markets | market activity index, each market rescaled to its own 2020 = 100 |
-| A | 52 always-lit markets | same, restricted to markets with positive BNR radiance in *every* year |
-| B | 107 ever-lit markets | log Feb-Jun median BNR radiance, for markets lit in *at least one* year |
+| 1 | `NTL_processing/01` ... `06` (see its README) | nighttime lights in `processed_data/` |
+| 2 | `NDVI_processing/00` ... `03` (see its README) | district NDVI in `processed_data/` |
+| 3 | `python data_build/build_derived.py` | `processed_data/derived/`: market panel, access categories, market NDVI; compares them with the copies `exhibits/` reads |
+| 4 | `build_event_study_panel.ipynb` | `processed_data/event_study_panel.dta` |
+| 5 | `cd exhibits && python run_all.py` | 19 figures, 4 tables, 58 checks in `output_paper/exhibits/` |
+| 6 | `cd exhibits && python paper_checks.py` | Table 2, Figure A.1, `paper_checks.csv` |
+| 7 | `ActivityLevelsCehcks..ipynb`, `Results_paper.ipynb` (run all) | `output_paper/market_day_validation/`, `seasonality/`, `figures/` |
+| 7b | `Results_paper_stats.ipynb` (run all) | `output_paper/figures/fig05_gdp_vs_mai.png`, `fig06_ntl_mai.png` |
+| 8 | `cd stata && stata -b do run_event_study_ACCESS.do` | `output_paper/event_study/fig_A_Access_*.png`, `MAI_access.xls` |
 
-Model B's ever-lit sample is an unbalanced panel: a market-year in which the
-market was dark drops out as a missing outcome rather than being set to zero.
+Steps 1-4 only need rerunning when the raw data change. Step 3's comparison should report every column as
+identical; that confirms the derived files `exhibits/` reads are the ones the raw data produce.
 
-Expected output when the models run: Model A all markets n=1077, R²=0.4826;
-Model A always-lit n=416, R²=0.5579; Model B ever-lit n=600 over 106 markets,
-R²=0.8992.
+## Where each exhibit comes from
 
-## Environment
+See the table in the repository's top-level `README.md`, which follows the numbering of the October 2026
+draft (`document/AFG_paper_revised.docx`). The staggering test in the footnotes is
+`exhibits/common.py` `staggering_test`, drawn as `exhibits/fig14_staggering.png`.
 
-Built and verified on Python 3.8 with pandas, numpy, statsmodels, scipy,
-matplotlib, geopandas, rasterio, rasterstats, shapely, pyproj and openpyxl.
+## Not in this repository
 
-`geopandas` 0.13 with `fiona` 1.10 needs `import fiona.path` before the first
-`geopandas.read_file` call; `build_event_study_panel.py` already does this.
+| Item | Why |
+|---|---|
+| Market detection: the 137 market outlines, their trading days and the per-image activity readings (`forAFG_paper_activity_all.csv`, the market registry) | Produced by the PlanetScope / Sentinel-2 pipeline (von Carnap et al. 2026), run outside this project; includes the 729 OSM locations, the 25% search area and the 2,500 screened candidates |
+| Figure 1, the detection method | Adapted from von Carnap et al. (2026); not generated from data |
+| Figure 2, a market on market and non-market days | Esri World Imagery Wayback scenes |
+| Figure 4, population within 20 km (the 40% and 90% shares) | Panel a is `figure4_population_coverage.py`, from the detection team's notebook; it needs their Earth Engine assets and has not been run here. No code found for panel b (OSM markets) |
+| WFP field validation (`data/WFP_validation/market_validation_corrected.xlsx`) | Field data, compiled by hand |
+| Travel times, catchment populations, nighttime-light buffers, monthly NDVI zonal statistics | Geospatial outputs (GRUFS, WorldPop, VIIRS, MODIS) in `data/Geospatial Analysis Outputs/`; the scripts that produced them are not in this repository, except the VIIRS buffers (`NTL_processing/`) |
+| National accounts, ACLED, control-status panel, UNODC poppy areas | External data |
+
+## Conventions and known issues
+
+- Activity is `activity_area_norm2020` throughout, except the day-validation tests of Table 1 and Figure A.3
+  (`ActivityLevelsCehcks..ipynb`), which use `activity_area_norm2022`.
+- Market `lon62_5018lat34_2416` (Pashtonzarghon, Hirat) has no registry trading day. The paper uses Monday
+  (`exhibits/common.py` `SUPPLIED_DAYS`, and `FIX_MKT` in the notebooks). The imagery shows it trading on
+  Monday and Thursday; the WFP field team reported Wednesday in 2026.
+- `Results_paper.ipynb` section 5 is an older Python event study, not used in the paper (Figures 10 and 11
+  come from the Stata do-file). It maps the panel's `ln_pop_30mixed` and `log_light_emissions` to the
+  names it expects, `log_pop` and `log_feb_jun_bnr`.
