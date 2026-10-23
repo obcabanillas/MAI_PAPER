@@ -1,22 +1,26 @@
 # code_paper
 
 All the code that produces the tables, figures and numbers in the Afghanistan periodic-markets paper
-(`document/AFG_paper_revised.docx`). The code lives in this repository. The data and the outputs do
-not: they stay in the MarketActivityIndex folder on OneDrive/Box.
+(`document/AFG_paper_revised.docx`, final version). The code lives in this repository. The data and the
+outputs do not: they stay in the MarketActivityIndex folder on OneDrive/Box.
+
+**`EXHIBITS.md` lists every figure and table in the paper, the script or notebook cell that makes it, and the
+output file.** All paper exhibits are written to `output_paper/paper_exhibits/`, named by exhibit number.
 
 ```
 code_paper/
+  EXHIBITS.md                  exhibit -> script / cell -> file, for every figure and table in the paper
   NTL_processing/              VIIRS rasters -> nighttime lights in 10 km market buffers (own README); config.py
   NDVI_processing/             district NDVI for the event-study panel (own README)
-  data_build/build_derived.py  raw data -> the derived market panel, access categories and market NDVI
+  data_build/                  raw data -> derived market panel, access categories, market NDVI; two-day-market panel
   build_event_study_panel.ipynb  the market-year panel for the event study (processed_data/event_study_panel.dta)
-  exhibits/                    most figures and tables, and paper_checks.py (every number in the text)
-  stata/run_event_study_ACCESS.do  Figures 10b-d and 11, the event study
-  ActivityLevelsCehcks..ipynb  field validation (Table 1, Figure A.3) and seasonality (Figure 7)
-  Results_paper.ipynb          nighttime-light distribution by access (Figure 5b-c)
-  Results_paper_stats.ipynb    descriptive statistics and Figure 8
+  exhibits/                    Figures 5a, 8, A.1, A.2, A.4; Tables 1, 2, 3, A.1; paper_checks.py
+  stata/run_event_study_ACCESS.do  Figures 9 and 10, the event study
+  Results_paper_stats.ipynb    Figures 3 and 7; also writes processed_data/market_images.csv
+  Results_paper.ipynb          Figure 5b-c
+  ActivityLevelsCehcks..ipynb  Figures 6 and A.3 (market-day validation tests and seasonality)
   figure4_population_coverage.py  Figure 4a (needs the detection team's Earth Engine assets)
-  A1_ndvi_mai_regression.ipynb NDVI-MAI market-year regression (not in the current draft)
+  archive/                     code for exhibits not in the final paper (not maintained)
 ```
 
 ## Pointing the code at the data
@@ -30,8 +34,10 @@ MarketActivityIndex/
   data/                          raw inputs (activity file, market registry, WFP validation, VIIRS, ACLED, ...)
   processed_data/                analysis-ready data written by the code (incl. derived/ from data_build)
   document/Repo_09042026/data/   the inputs exhibits/ reads (derived panel, NDVI, boundaries, nightlights, ...)
-  output_paper/                  everything the code writes: exhibits/, figures/, seasonality/,
-                                 market_day_validation/, event_study/, tables/
+  output_paper/paper_exhibits/   every figure and table in the paper (see EXHIBITS.md)
+  output_paper/                  supporting outputs: event_study/ (regression tables behind Figures 9-10),
+                                 market_day_validation/ (diagnostics behind Figure A.3), seasonality/,
+                                 exhibits/paper_checks.csv
 ```
 
 `exhibits/` finds its inputs through `config.py` as well (see `exhibits/common.py`); `exhibits/paths.json`
@@ -46,21 +52,21 @@ matplotlib, seaborn, geopandas, shapely, rasterio, rasterstats, pyproj, openpyxl
 | 1 | `NTL_processing/01` ... `06` (see its README) | nighttime lights in `processed_data/` |
 | 2 | `NDVI_processing/00` ... `03` (see its README) | district NDVI in `processed_data/` |
 | 3 | `python data_build/build_derived.py` | `processed_data/derived/`: market panel, access categories, market NDVI; compares them with the copies `exhibits/` reads |
-| 4 | `build_event_study_panel.ipynb` | `processed_data/event_study_panel.dta` |
-| 5 | `cd exhibits && python run_all.py` | 19 figures, 4 tables, 58 checks in `output_paper/exhibits/` |
-| 6 | `cd exhibits && python paper_checks.py` | Table 2, Figure A.1, `paper_checks.csv` |
-| 7 | `ActivityLevelsCehcks..ipynb`, `Results_paper.ipynb` (run all) | `output_paper/market_day_validation/`, `seasonality/`, `figures/` |
-| 7b | `Results_paper_stats.ipynb` (run all) | `output_paper/figures/fig05_gdp_vs_mai.png`, `fig06_ntl_mai.png` |
-| 8 | `cd stata && stata -b do run_event_study_ACCESS.do` | `output_paper/event_study/fig_A_Access_*.png`, `MAI_access.xls` |
+| 4 | `build_event_study_panel.ipynb`; `python data_build/build_event_study_days_panel.py` | `processed_data/event_study_panel.dta`, `event_study_days_panel.dta` |
+| 5 | `Results_paper_stats.ipynb` (run all) | `processed_data/market_images.csv`; Figures 3, 7 |
+| 6 | `cd exhibits && python run_all.py` | Figures 5a, 8, A.1, A.2, A.4; Tables 1, 2, 3, A.1; data checks |
+| 7 | `Results_paper.ipynb`, `ActivityLevelsCehcks..ipynb` (run all) | Figures 5b-c, 6, A.3 |
+| 8 | `cd stata && stata -b do run_event_study_ACCESS.do` | Figures 9, 10 |
+| 9 | `cd exhibits && python paper_checks.py` | `output_paper/exhibits/paper_checks.csv` (numbers in the text vs the code) |
 
 Steps 1-4 only need rerunning when the raw data change. Step 3's comparison should report every column as
 identical; that confirms the derived files `exhibits/` reads are the ones the raw data produce.
+`Results_paper_stats.ipynb` rebuilds `market_images.csv` when `process = 1` in its data cell; set it to 0 to
+reuse the existing file.
 
 ## Where each exhibit comes from
 
-See the table in the repository's top-level `README.md`, which follows the numbering of the October 2026
-draft (`document/AFG_paper_revised.docx`). The staggering test in the footnotes is
-`exhibits/common.py` `staggering_test`, drawn as `exhibits/fig14_staggering.png`.
+See `EXHIBITS.md`.
 
 ## Not in this repository
 
@@ -69,7 +75,7 @@ draft (`document/AFG_paper_revised.docx`). The staggering test in the footnotes 
 | Market detection: the 137 market outlines, their trading days and the per-image activity readings (`forAFG_paper_activity_all.csv`, the market registry) | Produced by the PlanetScope / Sentinel-2 pipeline (von Carnap et al. 2026), run outside this project; includes the 729 OSM locations, the 25% search area and the 2,500 screened candidates |
 | Figure 1, the detection method | Adapted from von Carnap et al. (2026); not generated from data |
 | Figure 2, a market on market and non-market days | Esri World Imagery Wayback scenes |
-| Figure 4, population within 20 km (the 40% and 90% shares) | Panel a is `figure4_population_coverage.py`, from the detection team's notebook; it needs their Earth Engine assets and has not been run here. No code found for panel b (OSM markets) |
+| Figure 4, population within 20 km (the 40% and 90% shares) | Panel a is `figure4_population_coverage.py`, from the detection team's notebook; it needs their Earth Engine assets and has not been run here. Panel b (OSM markets) is external: no code for it exists in this repository |
 | WFP field validation (`data/WFP_validation/market_validation_corrected.xlsx`) | Field data, compiled by hand |
 | Travel times, catchment populations, nighttime-light buffers, monthly NDVI zonal statistics | Geospatial outputs (GRUFS, WorldPop, VIIRS, MODIS) in `data/Geospatial Analysis Outputs/`; the scripts that produced them are not in this repository, except the VIIRS buffers (`NTL_processing/`) |
 | National accounts, ACLED, control-status panel, UNODC poppy areas | External data |
@@ -81,6 +87,7 @@ draft (`document/AFG_paper_revised.docx`). The staggering test in the footnotes 
 - Market `lon62_5018lat34_2416` (Pashtonzarghon, Hirat) has no registry trading day. The paper uses Monday
   (`exhibits/common.py` `SUPPLIED_DAYS`, and `FIX_MKT` in the notebooks). The imagery shows it trading on
   Monday and Thursday; the WFP field team reported Wednesday in 2026.
-- `Results_paper.ipynb` section 5 is an older Python event study, not used in the paper (Figures 10 and 11
-  come from the Stata do-file). It maps the panel's `ln_pop_30mixed` and `log_light_emissions` to the
-  names it expects, `log_pop` and `log_feb_jun_bnr`.
+- Figures 9 and 10 show 90% confidence intervals (t with G-1 degrees of freedom, G = province clusters);
+  the notes to both figures in the paper still say 95 percent. Figure 6b also shows 90% intervals.
+- The older Python event study that was in `Results_paper.ipynb` is not used in the paper; it is in
+  `archive/Results_paper_archive.ipynb`.

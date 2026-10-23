@@ -1,12 +1,14 @@
-"""Build every figure and every table in the paper.
+"""Build the paper exhibits made by this package (see figures.py and tables.py).
 
     python run_all.py            inputs, figures, tables, verification
     python run_all.py figures    just the figures
     python run_all.py tables     just the tables
     python run_all.py verify     just the verification checks
 
-Figures are written to out/ as PNG, tables as CSV. Nothing else is produced and
-nothing outside out/ is written.
+Figures (PNG) and tables (CSV) go to the shared paper_exhibits folder
+(config.PAPER_EXHIBITS), named by exhibit number. The paper's other exhibits are
+made by the notebooks and the Stata do-file; EXHIBITS.md lists them all.
+paper_checks.py, run separately, compares numbers quoted in the text with the code.
 
 Exit status is 0 only when every figure and table was produced and every
 verification check passed.
@@ -57,9 +59,7 @@ def main(what='all'):
         print('\n== tables')
 
         def _save(f, r):
-            r[0].to_csv(f'{C.OUT}/{f.__name__}.csv', index=False)
-            if f.__name__ in tables.AS_IMAGE:
-                tables.render_png(r[0], f'{C.OUT}/{f.__name__}.png')
+            C.save_paper_table(r[0], f.__name__)
 
         good &= _run('tables', tables.ALL, after=_save)
 
@@ -68,7 +68,7 @@ def main(what='all'):
         import subprocess
         good &= subprocess.call([sys.executable, 'verify.py']) == 0
 
-    print(f'\nout/ holds the figures and tables. {"" if good else "SOMETHING FAILED — see above."}')
+    print(f'\n{C.PAPER} holds the figures and tables. {"" if good else "SOMETHING FAILED — see above."}')
     return 0 if good else 1
 
 

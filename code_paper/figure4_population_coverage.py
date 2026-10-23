@@ -1,6 +1,6 @@
 """
-Figure 4, panel a: share of population and area within a given distance of a
-detected periodic market.
+PAPER FIGURE 4, panel a: share of population and area within a given distance of a
+detected periodic market. Output: output_paper/paper_exhibits/fig04a_population_coverage.png
 
 Extracted from MAI_AFG/Code/AFG20250825.ipynb (cells 9-11 and 13), the detection
 team's notebook, with the database credentials removed. The logic is unchanged.
@@ -19,8 +19,8 @@ Population is the JRC GHSL 2023A population grid for 2020 (the paper's source
 note says WorldPop 2020). "Major cities" are removed with the detection team's
 city mask.
 
-Panel b (the same shares for OpenStreetMap marketplaces) was not found in any
-notebook or script; see README.md.
+Panel b (the same shares for OpenStreetMap marketplaces) is not produced by any
+code in this repository; it is an external input to the paper (see EXHIBITS.md).
 
     python figure4_population_coverage.py          # plot from the existing ring tables
     python figure4_population_coverage.py --build  # rebuild the ring tables first
@@ -37,7 +37,7 @@ import pandas as pd
 from shapely.geometry import Point
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "NTL_processing"))
-from config import OUTPUT  # noqa: E402
+from config import PAPER_EXHIBITS  # noqa: E402
 
 COUNTRY = "Afghanistan"
 RING_ASSET = f"projects/planetupload/assets/cleanedLocs/{COUNTRY}_ringsghsl"
@@ -160,13 +160,10 @@ def pop_share_plot(ax):
     ax.grid(False)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.text(-0.15, 1, "B", transform=ax.transAxes, fontsize=12, fontweight="bold",
-            verticalalignment="top", horizontalalignment="left")
 
 
 def plot():
-    out = os.path.join(OUTPUT, "figures", "fig4a_population_coverage.png")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    out = os.path.join(PAPER_EXHIBITS, "fig04a_population_coverage.png")
     fig, ax = plt.subplots(figsize=(6, 4.5))
     pop_share_plot(ax)
     fig.savefig(out, dpi=300, bbox_inches="tight")

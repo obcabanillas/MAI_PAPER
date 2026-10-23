@@ -41,10 +41,15 @@ _sys.path.insert(0, os.path.join(HERE, '..', 'NTL_processing'))
 try:
     import config as _project
     _PROJECT_DATA, _PROJECT_OUT = _project.REPO_DATA, os.path.join(_project.OUTPUT, 'exhibits')
+    _PROJECT_PAPER = _project.PAPER_EXHIBITS
 except Exception:
-    _PROJECT_DATA, _PROJECT_OUT = None, None
+    _PROJECT_DATA, _PROJECT_OUT, _PROJECT_PAPER = None, None, None
+# OUT: diagnostic outputs (paper_checks.csv). PAPER: the paper's figures and tables,
+# shared with the notebooks and the Stata do-file (config.PAPER_EXHIBITS).
 OUT = _PROJECT_OUT or os.path.join(HERE, 'out')
+PAPER = _PROJECT_PAPER or os.path.join(HERE, 'out', 'paper_exhibits')
 os.makedirs(OUT, exist_ok=True)
+os.makedirs(PAPER, exist_ok=True)
 REFERENCE = os.path.join(HERE, 'reference')     # fixtures shipped with the package
 
 _CFG = {}
@@ -209,11 +214,36 @@ def grid(ax, h=None, axis='y'):
 def years(ax, yrs=YEARS):
     ax.set_xticks(yrs); ax.set_xticklabels([str(y)[2:] for y in yrs])
 
-def save(fig, name):
-    p = f'{OUT}/{name}.png'
+def save(fig, name, folder=None):
+    """Save a figure as PNG. Paper exhibits pass folder=PAPER (see save_paper)."""
+    p = f'{folder or OUT}/{name}.png'
     fig.savefig(p, dpi=300, bbox_inches='tight'); plt.close(fig)
     print(f'   saved {name}.png')
     return p
+
+
+def save_paper(fig, name):
+    """Save one of the paper's figures to the shared paper_exhibits folder."""
+    return save(fig, name, folder=PAPER)
+
+
+def save_paper_table(T, name, index=False):
+    """Save one of the paper's tables, as laid out in the paper, to paper_exhibits."""
+    p = f'{PAPER}/{name}.csv'
+    T.to_csv(p, index=index, encoding='utf-8-sig')
+    print(f'   saved {name}.csv')
+    return p
+
+
+# 2026 WFP field validation, one row per visited market (135 of the 137; the two
+# Baghlan markets were not visited). Sheet "Market list" carries the day-match
+# classification used by Table 1, Table 2 and Figure A.1.
+WFP = (os.path.join(_project.DATA, 'WFP_validation', 'market_validation_corrected.xlsx')
+       if _PROJECT_DATA else _resolve('WFP', 'WFP_validation/market_validation_corrected.xlsx'))
+
+
+def wfp_validation():
+    return pd.read_excel(WFP, sheet_name='Market list')
 
 # --------------------------------------------------------------- shared builders
 def panel(include_herat=True):

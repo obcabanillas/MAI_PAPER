@@ -31,6 +31,11 @@ DATA = os.path.join(BASE, "data")
 PROCESSED = os.path.join(BASE, "processed_data")
 OUTPUT = os.path.join(BASE, "output_paper")
 
+# Every figure and table in the paper is written here, named by its exhibit number
+# (fig05a_..., table1_...). See EXHIBITS.md at the repository root for which script
+# or notebook cell makes each one.
+PAPER_EXHIBITS = os.path.join(OUTPUT, "paper_exhibits")
+
 if not os.path.isdir(DATA):
     raise RuntimeError(
         "Could not find the MAI data tree.\n"
@@ -72,7 +77,7 @@ KABUL_LON, KABUL_LAT = 69.1783, 34.5253
 BUFFER_KM = 10.0
 MAX_RAD_CAP = 300.0
 
-for _d in (PROCESSED, OUTPUT, WORK_DIR):
+for _d in (PROCESSED, OUTPUT, PAPER_EXHIBITS, WORK_DIR):
     os.makedirs(_d, exist_ok=True)
 
     

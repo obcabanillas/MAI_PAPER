@@ -1,18 +1,38 @@
 # Figures and tables — Afghanistan periodic markets (MAI)
 
-Builds every figure and every table in the paper from raw data, and verifies the
-result. Nineteen figures as PNG, four tables as CSV, 58 numerical checks.
+Builds the paper exhibits listed below from the data, and verifies the series
+behind them. The paper's other exhibits are made by the notebooks and the Stata
+do-file; `../EXHIBITS.md` lists every exhibit and where it is made.
 
-This package produces exhibits only. It does not rebuild the manuscript, does
-not write the prose statistics file, and writes nothing outside `out/`.
+| Paper exhibit | Function | File |
+|---|---|---|
+| Figure 5, panel a | `figures.fig05a_access_categories` | `fig05a_access_categories.png` |
+| Figure 8 | `figures.fig08_regions` | `fig08_regions.png` |
+| Figure A.1 | `figures.figA1_validation_samples` | `figA1_validation_samples.png` |
+| Figure A.2 | `figures.figA2_poppy` | `figA2_poppy.png` |
+| Figure A.4, panel a | `figures.figA4a_overpass_composition` | `figA4a_overpass_composition.png` |
+| Figure A.4, panel b | `figures.figA4b_overpass_effects` | `figA4b_overpass_effects.png` |
+| Table 1 | `tables.table1_day_validation` | `table1_day_validation.csv` |
+| Table 2 | `tables.table2_goods_by_access` | `table2_goods_by_access.csv` |
+| Table 3 | `tables.table3_ndvi_marketday` | `table3_ndvi_marketday.csv` |
+| Table A.1 | `tables.tableA1_poppy` | `tableA1_poppy.csv` |
+
+Everything is written to `output_paper/paper_exhibits` (`config.PAPER_EXHIBITS`);
+tables are laid out as in the paper. `paper_checks.py` writes only its diagnostic
+`paper_checks.csv`, to `output_paper/exhibits`.
+
+Figures and tables that are not in the final paper (the old `fig01`-`fig19`
+numbering, the conflict-and-location table, the regional coverage table) are in
+`../archive/exhibits/`. The sections below on deviations and inputs were written
+for that older set and are kept as provenance; they still apply to the shared
+helpers in `common.py`.
 
 ## Running it
 
-The input data ships inside the package, so there is nothing to configure:
-
 ```
-python run_all.py                 # 19 figures, 4 tables and 58 checks into ./out
+python run_all.py                 # the exhibits above and the data checks
 python common.py                  # lists every input and how each one resolved
+python paper_checks.py            # numbers quoted in the text vs the code
 ```
 
 `run_all.py` also takes a stage — `figures`, `tables` or `verify` — to run just
@@ -30,9 +50,10 @@ Python 3.11 with `pandas`, `numpy`, `geopandas`, `statsmodels`, `scipy`,
 | File | Contents |
 |---|---|
 | `common.py` | Path resolution, the colour palette, and the shared helpers: `panel()`, `mai_series()`, `market_year_activity()`, `buffer_ntl()`, `access_categories()`, `haversine()`, `market_index()`, `frequency_pairs()`, `district_control_2020()`, `ntl_per_capita_by_control()`, `ntl_national()`, `ndvi_levels()`, `staggering_test()`, `check_inputs()`. |
-| `figures.py` | One function per figure, `fig01_…` through `fig19_…`. `ALL` lists them in order. |
-| `tables.py` | `table1_conflict_markets()`, `tableA1_region_coverage()`, `tableA2_poppy()`, `tableA3_ndvi_marketday()`. Each returns the formatted table and the frame behind it. `render_png()` draws a table as a picture for the exhibits the paper carries as images; `AS_IMAGE` lists them. |
-| `verify.py` | 58 checks against published values and against the shipped `reference/` fixtures. |
+| `figures.py` | One function per paper figure file (table above). `ALL` lists them. |
+| `tables.py` | One function per paper table (table above). Each returns the table as laid out in the paper and a dict of metadata. |
+| `verify.py` | Checks of the data and series behind the exhibits against published values and the shipped `reference/` fixtures. |
+| `paper_checks.py` | Compares numbers quoted in the text with the code; writes `paper_checks.csv`. Makes no exhibit. |
 | `run_all.py` | Runs the stages and reports what failed. |
 | `paths.json.example` | Copy to `paths.json` to pin input locations explicitly. |
 | `data/` | Every file the code reads, and nothing else — 31 files, 155 MB. See `data/README.md` for the contents and for what was left out and why. |
@@ -40,14 +61,9 @@ Python 3.11 with `pandas`, `numpy`, `geopandas`, `statsmodels`, `scipy`,
 
 ## Output
 
-Everything lands in `out/`, which is created on first run:
-
-- `fig01_region_map.png` … `fig19_ntl_per_capita_by_control.png` — 19 figures at
-  300 dpi.
-- `table1_conflict_markets.csv`, `tableA1_region_coverage.csv`,
-  `tableA2_poppy.csv`, `tableA3_ndvi_marketday.csv`.
-- `tableA1_region_coverage.png` — the one table the paper carries as a picture
-  rather than as a typeset table.
+The files in the table at the top, in `output_paper/paper_exhibits` (figures at
+300 dpi). Without `NTL_processing/config.py` the package falls back to
+`out/paper_exhibits`.
 
 ## Inputs and paths
 
@@ -187,7 +203,8 @@ rather than because any method changed:
 
 ## Verification
 
-`verify.py` passes 58 of 58 checks. The national index is reproduced to two
+`verify.py` passes 29 of 29 checks (the 58-check version, which also covered the
+archived figures, is `../archive/exhibits/verify_full.py`). The national index is reproduced to two
 decimals for all eight years (102.09, 100.42, 99.99, 108.87, 110.29, 103.04,
 95.25, 88.47), as are the Hilmand splits, the access-category counts, the
 trading-day distribution (137 / 104 / 32 / 1 / 171), the 120 always-active
@@ -195,10 +212,12 @@ markets, the legacy 308 staggering pairs, the buffer nightlights index, and the
 inputs behind the two figures the authors respecified (Figure 3 panels b and d,
 and Figure 5). The three `reference/` fixtures are reproduced exactly.
 
-## Figure coverage
+## Figure coverage (older numbering, kept as provenance)
 
-Slot names refer to the media files inside `AFG_paper_outline_revised.docx` and
-are recorded here as provenance only; this package does not touch that document.
+This table and the next describe the functions now in `../archive/exhibits/figures_full.py`
+and `tables_full.py`, under an earlier draft's numbering. The current mapping is
+the table at the top of this file. Slot names refer to the media files inside
+`AFG_paper_outline_revised.docx`.
 
 | Function | Paper slot | Status |
 |---|---|---|

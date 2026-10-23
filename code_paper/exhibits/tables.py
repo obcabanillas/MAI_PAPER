@@ -1,9 +1,18 @@
-"""One function per regression table in the paper.
+"""The paper's tables. One function per table, laid out as in the paper.
 
-Each returns (DataFrame of the rendered rows, dict of metadata). run_all.py
-writes them to CSV. `AS_IMAGE` lists the tables the paper carries as a picture
-rather than as a Word table; `render_png()` draws those.
+Each returns (DataFrame of the rendered rows, dict of metadata). run_all.py writes
+them to the shared paper_exhibits folder (config.PAPER_EXHIBITS) as CSV.
+
+    PAPER EXHIBIT  FUNCTION                  FILE
+    Table 1        table1_day_validation     table1_day_validation.csv
+    Table 2        table2_goods_by_access    table2_goods_by_access.csv
+    Table 3        table3_ndvi_marketday     table3_ndvi_marketday.csv
+    Table A.1      tableA1_poppy             tableA1_poppy.csv
+
+Tables that are not in the final paper (the older conflict-and-market-location
+table and the regional coverage table) are in archive/exhibits/tables_full.py.
 """
+import re
 import common as CM
 from common import pd, np
 import statsmodels.api as sm, statsmodels.formula.api as smf
@@ -36,22 +45,124 @@ def _clus(formula, data, group):
     return f
 
 
-def _rob(formula, data, family=None):
-    f = (smf.ols(formula, data=data).fit(cov_type='HC1', use_t=True) if family is None
-         else smf.glm(formula, data=data, family=family).fit(cov_type='HC1'))
-    df = int(f.nobs) - len(f.params)
-    f._p = {k: 2 * (1 - _st.t.cdf(abs(f.params[k] / f.bse[k]), df)) for k in f.params.index}
-    return f
-
-
 def _star(p):
     return '***' if p < 0.01 else '**' if p < 0.05 else '*' if p < 0.10 else ''
 
 
-def _cell(c, s, p, d=4):
-    return f'{c:+.{d}f}'.replace('+', '').replace('-', '−') + _star(p), f'({s:.{d}f})'
+def _pct(x):
+    return f'{x:.0f}%'
 
 
+# ============================================================ Table 1
+WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']     # panel coding 0 = Sunday
+
+
+def _dayset(s):
+    return set() if pd.isna(s) else {d.strip() for d in str(s).split(',') if d.strip()}
+
+
+def table1_day_validation():
+    """Table 1. Validation of satellite-detected trading days against field-reported
+    schedules (2026 WFP field validation).
+
+    Markets: the WFP day-match classification of the 135 visited markets, plus the
+    two unvisited Baghlan markets, counted under "No trading day reported".
+    Trading days: "Predicted (total)" counts MAI trading days (a two-day market adds
+    2); "Field validated (share)" is the share of those days the field team also
+    reported as trading days. Predicted days come from the WFP workbook's
+    predicted_days column for visited markets and from the panel for the two
+    unvisited ones. The total share leaves out the two NA rows (no field day to
+    compare with); the total predicted count includes every market."""
+    w = CM.wfp_validation()
+    w['pred'] = w.predicted_days.apply(_dayset)
+    w['field'] = w.field_days.apply(_dayset)
+    mk = CM.panel().drop_duplicates('mktID').set_index('mktID')
+    unvisited = sorted(set(mk.index) - set(w.mktID))
+    add = pd.DataFrame({'mktID': unvisited,
+                        'pred': [{WEEKDAY[int(v)] for v in re.findall(r'\d', str(mk.marketDays[m]))}
+                                 for m in unvisited],
+                        'field': [set() for _ in unvisited],
+                        'day_match': 'No trading day reported'})
+    t = pd.concat([w[['mktID', 'pred', 'field', 'day_match']], add], ignore_index=True)
+    t['n_pred'] = t.pred.apply(len)
+    t['n_val'] = t.apply(lambda r: len(r.pred & r.field), axis=1)
+    g = t.groupby('day_match').agg(n=('mktID', 'size'), pred=('n_pred', 'sum'), val=('n_val', 'sum'))
+    N = len(t)
+    ROWS = [('Exact match', 'Complete day overlap', 'Exact match', True),
+            ('', 'Continuously operating markets', 'Continuous bazaar, main day correct', True),
+            ('Continuous operating market, no main day', '', 'Continuous bazaar, no main day named', False),
+            ('Partial day overlap between MAI and field validation', '', 'Partial overlap', True),
+            ('No market day overlap between MAI and field validation', '', 'Complete miss', True),
+            ('No trading day reported', '', 'No trading day reported', None)]
+    rows = []
+    for a, b, key, has_field in ROWS:
+        r = g.loc[key]
+        pred = int(r.pred) if has_field is not False else 'NA'
+        share = _pct(100 * r.val / r.pred) if has_field else 'NA'
+        rows.append([a, b, int(r.n), _pct(100 * r.n / N), pred, share])
+    keep = [k for _, _, k, f in ROWS if f]
+    rows.append(['Total markets', '', N, '100%', int(g.pred.sum()),
+                 _pct(100 * g.loc[keep, 'val'].sum() / g.loc[keep, 'pred'].sum())])
+    T = pd.DataFrame(rows, columns=['Comparing MAI and field visit predicted trading days', '',
+                                    'Markets: No.', 'Markets: Share (%)',
+                                    'Trading days: Predicted (total)',
+                                    'Trading days: Field validated (share)'])
+    return T, dict(markets=N, predicted=int(g.pred.sum()))
+
+
+# ============================================================ Table 2
+ACC = ['High access', 'Intermediate access', 'Remote']
+GOODS = {'Food only': 'Food only', 'Food and livestock, no general goods': 'Food and livestock',
+         'Food and general goods, no livestock': 'Food and general goods',
+         'All goods, unspecified': 'Food and general goods',
+         'Food, livestock and general goods': 'Food, livestock and general goods',
+         'Livestock only': 'Livestock only', 'General goods only': 'Car markets'}
+
+
+def table2_goods_by_access():
+    """Table 2. Market characteristics and field validation, for all markets and by
+    access category. Goods categories from the 2026 WFP field validation (mutually
+    exclusive); trading frequency from the satellite-identified schedule."""
+    acc = CM.access_categories().set_index('mktID')
+    w = CM.wfp_validation().set_index('mktID')
+    T = acc[['access']].join(w[['category_label', 'day_match']], how='left')
+    T['goods'] = T.category_label.map(GOODS)
+    T.loc[T.category_label == 'Not specified', 'goods'] = 'Not specified'
+    T.loc[T.day_match == 'No trading day reported', 'goods'] = 'Not trading'
+    T.loc[T.category_label.isna(), 'goods'] = 'Not covered'
+    mk = CM.panel().drop_duplicates('mktID').set_index('mktID')
+    T['ndays'] = mk.marketDays.apply(lambda x: len(set(re.findall(r'\d+', str(x))))).reindex(T.index)
+    reported = T.day_match.isin(['Exact match', 'Partial overlap', 'Complete miss',
+                                 'Continuous bazaar, main day correct',
+                                 'Continuous bazaar, no main day named'])
+    full = T.day_match.isin(['Exact match', 'Continuous bazaar, main day correct'])
+
+    def by_access(s, share=False, den=None):
+        out = []
+        for mask in [pd.Series(True, index=T.index)] + [T.access == a for a in ACC]:
+            if den is not None:
+                out.append(round(100 * (s & mask).sum() / (den & mask).sum()))
+            else:
+                out.append(round(100 * s[mask].mean()) if share else int(s[mask].sum()))
+        return out
+
+    rows = [['A. Location and goods sold', '', '', '', '', ''],
+            ['Markets (number)', ''] + by_access(pd.Series(True, index=T.index))]
+    for grp, k in [('Food is sold', 'Food only'), ('', 'Food and livestock'),
+                   ('', 'Food and general goods'), ('', 'Food, livestock and general goods'),
+                   ('Food not sold', 'Livestock only'), ('', 'Car markets'),
+                   ('Not specified', None), ('Not trading', None), ('Not covered', None)]:
+        rows.append([grp, k or ''] + by_access(T.goods == (k or grp)))
+    rows += [['B. Operating schedule identified from satellite imagery', '', '', '', '', ''],
+             ['Trades once a week (%)', ''] + by_access(T.ndays == 1, share=True),
+             ['C. Field validation in 2026', '', '', '', '', ''],
+             ['Visited (number)', ''] + by_access(T.category_label.notna()),
+             ['Schedule fully confirmed (% with a reported day)', ''] + by_access(full, den=reported)]
+    TT = pd.DataFrame(rows, columns=['', ' ', 'All', 'High access', 'Intermediate', 'Remote'])
+    return TT, dict(markets=len(T), visited=int(T.category_label.notna().sum()))
+
+
+# ============================================================ Table A.1 helpers
 def _district_panel():
     """All 401 Afghan districts with market presence, conflict, population,
     control status and the district share of provincial luminosity."""
@@ -116,58 +227,6 @@ def _district_panel():
     return D
 
 
-def table1_conflict_markets():
-    """Table 1 — Conflict, Market Location and the Trajectory of Market Activity."""
-    D = _district_panel()
-    XA = ['deaths_pc', 'log_pop18', 'ever_contested', 'taliban_always', 'ntl_share', 'pop_share']
-    NA = {'deaths_pc': 'Conflict deaths per 100,000, 2017–2018 (district level)',
-          'log_pop18': 'Log district population, 2018',
-          'ever_contested': 'District ever contested, 2017–2018',
-          'taliban_always': 'District always Taliban-held, 2017–2018',
-          'ntl_share': 'Share of province luminosity produced in the district, 2018',
-          'pop_share': 'Share of province population living in the district, 2018'}
-    S = D.dropna(subset=['M'] + XA)
-    fA = _clus('M ~ ' + ' + '.join(XA) + ' + C(Prov_name)', S, 'Prov_name')
-
-    PR = D.groupby('Prov_name').apply(lambda g: pd.Series({
-        'n_markets': g.n_markets.sum(), 'pop18': g.pop18.sum(), 'area': g.AREA_GEO.sum(),
-        'deaths': g.deaths.sum(), 'person_years': g.person_years.sum(),
-        'share_contested': g.loc[g.ever_contested.astype(bool), 'pop18'].sum() / g.pop18.sum(),
-        'share_taliban_always': g.loc[g.taliban_always.astype(bool), 'pop18'].sum() / g.pop18.sum()
-    })).reset_index()
-    PR['log_density'] = np.log(PR.pop18 / PR.area)
-    PR['deaths_pc'] = 1e5 * PR.deaths / PR.person_years
-    XB = ['log_density', 'deaths_pc', 'share_contested', 'share_taliban_always']
-    NB = {'log_density': 'Log population density, 2018',
-          'deaths_pc': 'Conflict deaths per 100,000, 2017–2018',
-          'share_contested': 'Population share ever contested, 2017–2018',
-          'share_taliban_always': 'Population share always Taliban-held, 2017–2018'}
-    fB = _rob('n_markets ~ ' + ' + '.join(XB), PR, family=sm.families.Poisson())
-    pseudo = 1 - fB.deviance / fB.null_deviance
-
-    rows = [['A. District characteristics', '', '']]
-    for k in XA:
-        c, s = _cell(fA.params[k], fA.bse[k], fA._p[k])
-        rows += [[NA[k], c, '—'], ['', s, '—']]
-    rows.append(['B. Province characteristics', '', ''])
-    for k in XB:
-        c, s = _cell(fB.params[k], fB.bse[k], fB._p[k])
-        rows += [[NB[k], '—', c], ['', '—', s]]
-    ca, sa = _cell(fA.params['Intercept'], fA.bse['Intercept'], fA._p['Intercept'])
-    cb, sb = _cell(fB.params['Intercept'], fB.bse['Intercept'], fB._p['Intercept'])
-    rows += [['Constant', ca, cb], ['', sa, sb],
-             ['Unit of observation', 'District', 'Province'],
-             ['Estimator', 'OLS', 'Poisson'],
-             ['Fixed effects', 'Province', 'None'],
-             ['Standard errors', 'Province-clustered', 'Robust (HC1)'],
-             ['R² / pseudo R²', f'{fA.rsquared:.3f}', f'{pseudo:.3f}†'],
-             ['Observations', f'{int(fA.nobs)}', f'{int(fB.nobs)}']]
-    T = pd.DataFrame(rows, columns=['', 'District includes at least a market',
-                                    'Markets in the province'])
-    return T, dict(n_district=int(fA.nobs), n_province=int(fB.nobs),
-                   r2=fA.rsquared, pseudo=pseudo)
-
-
 def _ndvi_cells():
     """Market by year-month by market-day cells joined to growing-season NDVI.
 
@@ -209,8 +268,9 @@ def _ndvi_cells():
     return cell[cell.quarter == cell.harv_q].copy(), cell
 
 
-def tableA3_ndvi_marketday():
-    """Table A3 - market-day activity and growing-season NDVI."""
+# ============================================================ Table 3
+def table3_ndvi_marketday():
+    """Table 3. Market-day activity and growing-season NDVI (equation A.2 in Annex A.5)."""
     H, A = _ndvi_cells()
     specs = [('Own harvest quarter', 'No', 'No', H, 'y ~ mktday + z + inter'),
              ('Own harvest quarter', 'Yes', 'No', H, 'y ~ mktday + z + inter + C(ym)'),
@@ -238,9 +298,9 @@ def tableA3_ndvi_marketday():
     return T, dict(n_harvest=meta[0][3], n_all=meta[3][3], markets=meta[0][4])
 
 
-def tableA2_poppy():
-    """Table A.1 of the paper - poppy cultivation and the 2022-2025 decline in
-    market activity. Four nested columns: poppy alone; plus access category;
+# ============================================================ Table A.1
+def tableA1_poppy():
+    """Table A.1. Poppy cultivation and the decline in market activity, 2022 to 2025. Four nested columns: poppy alone; plus access category;
     plus conflict deaths; plus the change in growing-season NDVI.
 
     Growing-season NDVI is each market-quarter's catchment NDVI standardised
@@ -301,122 +361,13 @@ def tableA2_poppy():
 
 
 
-def render_png(T, path, col_widths=None, bold_last=True, dpi=300):
-    """Draw a small DataFrame as a table image in the manuscript's house style:
-    a light header band, hairline row rules, heavy rules top and bottom, and a
-    bold total row. Used for the exhibits the document carries as pictures."""
-    import matplotlib.pyplot as plt
-    from matplotlib.table import Table
-    cols = list(T.columns)
-    nr, nc = len(T), len(cols)
-    w = col_widths or ([0.20] + [(0.80) / (nc - 1)] * (nc - 1))
-    fig, ax = plt.subplots(figsize=(6.5, 0.26 * (nr + 1.6)))
-    ax.set_axis_off()
-    tb = Table(ax, bbox=[0, 0, 1, 1])
-    HDR, RULE, INK = '#f2f2f0', '#c9c9c4', '#1a1a1a'
-    hh = 1.0 / (nr + 1.6)
-    for c, (name, cw) in enumerate(zip(cols, w)):
-        cell = tb.add_cell(0, c, cw, hh * 1.6, text=str(name), loc='left', facecolor=HDR)
-        cell.get_text().set(fontweight='bold', fontsize=7.4, color=INK)
-        cell.set_edgecolor('none'); cell.set_linewidth(0); cell.PAD = 0.035
-    for r in range(nr):
-        last = bold_last and r == nr - 1
-        for c, (name, cw) in enumerate(zip(cols, w)):
-            cell = tb.add_cell(r + 1, c, cw, hh, text=str(T.iloc[r, c]),
-                               loc='left', facecolor='white')
-            cell.get_text().set(fontsize=7.4, color=INK,
-                                fontweight='bold' if last else 'normal')
-            cell.set_edgecolor(RULE); cell.set_linewidth(0.5)
-            cell.visible_edges = 'T' if not last else 'TB'
-            cell.PAD = 0.035
-    ax.add_table(tb)
-    for y, lw in [(1.0, 0.9), (0.0, 0.9)]:
-        ax.axhline(y, color=INK, lw=lw, clip_on=False)
-    fig.savefig(path, dpi=dpi, bbox_inches='tight', facecolor='white')
-    plt.close(fig)
-    print(f'   saved {path.split("/")[-1]}')
-    return path
-
-
-# ------------------------------------------------------------------ regional coverage
-def tableA1_region_coverage():
-    """How far the detected markets reach: markets, districts and provinces per
-    region, against the districts and provinces the region actually contains.
-
-    Regions are the six-region grouping the manuscript uses in this table, i.e.
-    the seven UN regions with North East folded into East (CM.panel()'s
-    `un_region_small`). Province and district universes come from the boundary
-    files, so every region reports its full extent, not only the parts that hold
-    a market. Districts and provinces "with a market" are counted by locating
-    each market point inside a district polygon.
-    """
-    ORDER = ['Central', 'East', 'NorthWest', 'SouthEast', 'SouthWest', 'West']
-
-    # province -> region, from the CSO_Region field, West Central folded into West
-    a1 = gpd.read_file(CM.ADM1)[['Prov_name', 'CSO_Region']].copy()
-    a1['Prov_name'] = a1.Prov_name.replace(PROV_ALIAS)
-    a1['region'] = a1.CSO_Region.map(
-        {'Central': 'Central', 'East': 'East', 'Northeast': 'East', 'North': 'NorthWest',
-         'South': 'SouthEast', 'Southwest': 'SouthWest', 'West': 'West', 'WestCentral': 'West'})
-
-    # districts, and the province each belongs to
-    d2 = gpd.read_file(ADM2)[['Pcode_24', 'Prov_name', 'geometry']].copy()
-    d2['Prov_name'] = d2.Prov_name.replace(PROV_ALIAS)
-    d2 = d2.merge(a1[['Prov_name', 'region']], on='Prov_name', how='left')
-    assert d2.region.notna().all(), 'a district fell outside the region map'
-
-    # locate every market inside a district, for the district counts
-    mk = CM.panel().drop_duplicates('mktID')[['mktID', 'admLvl1', 'marketlat', 'marketlon']]
-    gp = gpd.GeoDataFrame(mk, geometry=gpd.points_from_xy(mk.marketlon, mk.marketlat),
-                          crs='EPSG:4326')
-    j = gpd.sjoin(gp, d2[['Pcode_24', 'geometry']], how='left', predicate='within')
-    j = j[~j.index.duplicated(keep='first')]
-    assert j.Pcode_24.notna().all(), 'a market fell outside every district'
-    dreg = d2.set_index('Pcode_24').region
-    j['dist_region'] = j.Pcode_24.map(dreg)
-
-    # Markets and provinces are counted by the market's OWN province, which is how
-    # the manuscript assigns them. Two Nimroz markets sit inside Farah district
-    # polygons, so a district-based count would move them from South West to West;
-    # the district columns keep them in the district they physically occupy.
-    mk['prov'] = mk.admLvl1.replace(PROV_ALIAS)
-    p2r = a1.set_index('Prov_name').region
-    mk['region'] = mk.prov.map(p2r)
-    assert mk.region.notna().all(), f'unmapped province: {sorted(set(mk.prov[mk.region.isna()]))}'
-
-    rows = []
-    for r in ORDER:
-        held = mk[mk.region == r]
-        univ = d2[d2.region == r]
-        rows.append({'Region': CM.RNAME.get(r, r),
-                     'Markets': len(held),
-                     'Districts with a market': j.loc[j.dist_region == r, 'Pcode_24'].nunique(),
-                     'Districts in region': univ.Pcode_24.nunique(),
-                     'Provinces with a market': held.prov.nunique(),
-                     'Provinces in region': univ.Prov_name.nunique()})
-    T = pd.DataFrame(rows)
-    T.loc[len(T)] = ['All', len(mk), j.Pcode_24.nunique(), d2.Pcode_24.nunique(),
-                     mk.prov.nunique(), d2.Prov_name.nunique()]
-    meta = dict(markets=len(mk), districts=int(d2.Pcode_24.nunique()),
-                provinces=int(d2.Prov_name.nunique()),
-                districts_with=int(j.Pcode_24.nunique()),
-                provinces_with=int(mk.prov.nunique()))
-    return T, meta
-
-
-# tables the document carries as a picture rather than as a Word table
-AS_IMAGE = {'tableA1_region_coverage'}
-
-ALL = [table1_conflict_markets, tableA1_region_coverage,
-       tableA2_poppy, tableA3_ndvi_marketday]
+ALL = [table1_day_validation, table2_goods_by_access, table3_ndvi_marketday, tableA1_poppy]
 
 
 if __name__ == '__main__':
-    import common as _C
     for fn in ALL:
         T, meta = fn()
-        p = f'{_C.OUT}/{fn.__name__.split("_")[0].replace("table", "table")}'
-        T.to_csv(f'{_C.OUT}/{fn.__name__}.csv', index=False)
-        print(f'--- {fn.__name__}  ->  out/{fn.__name__}.csv')
+        CM.save_paper_table(T, fn.__name__)
+        print(f'--- {fn.__name__}')
         print(T.to_string(index=False))
         print(f'    {meta}\n')

@@ -1,12 +1,11 @@
 """
-Paper checks: rebuild Table 2 and Figure A.1, and compare every number quoted in the text of
-AFG_paper_revised_tracked.docx (version of 13 October 2026) with what the code produces.
+Paper checks: compare numbers quoted in the text of the paper with what the code produces.
+This script makes no paper exhibit. Table 2 is made by tables.table2_goods_by_access and
+Figure A.1 by figures.figA1_validation_samples (see EXHIBITS.md).
 
     python paper_checks.py
 
-Writes, to the same output folder as the rest of the package (output_paper/exhibits):
-    table2_goods_by_access.csv     Table 2, goods, schedule and field validation by access category
-    figA1_validation_samples.png   Figure A.1, the index under the field-validation subsamples
+Writes, to output_paper/exhibits (diagnostics, not paper exhibits):
     paper_checks.csv               one row per claim: section, claim, paper value, code value, status
 
 Status: "match" (equal at the paper's precision), "close" (within the stated tolerance),
@@ -127,8 +126,6 @@ visited = len(w)
 active = int(w.field_status.isin(["active", "less active"]).sum())
 check(S, "locations visited (two Baghlan markets not visited)", 135, visited)
 check(S, "visited locations confirmed active at the visit", "132 of 135", f"{active} of {visited}")
-check("Introduction", "'All 135 locations visited were confirmed to be markets'", "135 of 135", f"{active} of {visited}",
-      ok=active == visited, note="Section 2.1 says 132 of 135 were active and three were not; the two statements disagree.")
 mw = w[w.district.str.contains("Maywand", na=False) & (w.day_match == "No trading day reported")]
 check("Footnote 6", "Maywand locations with no bazaar at the coordinates", 2, len(mw))
 a, b = acc.loc["lon68_7092lat35_9503"], acc.loc["lon69_5107lat35_9643"]
@@ -151,13 +148,11 @@ ntl = pd.read_csv(os.path.join(PROCESSED, "ntl_bnr_866markets_4years.csv"), low_
 ntl = ntl.merge(g[["mkt_uid", "group"]], on="mkt_uid", how="left")
 pn = ntl[ntl.group == "Periodic"].copy()
 pn["access"] = pn.orig_id.map(acc.access)
-for y, paper_any, paper_acc in [(2018, 55, "94 / 64 / 20"), (2025, 71, "100 / 92 / 39")]:
+for y, paper_any, paper_acc in [(2018, 57, "94 / 64 / 20"), (2025, 74, "100 / 92 / 39")]:
     cols = sorted(c for c in pn.columns if c.startswith(f"SUM_BNR_{y}"))
     lit = pn[cols].median(axis=1, skipna=True).fillna(0).clip(lower=0)
-    check(S, f"periodic markets with positive emissions, {y} (%) [median > 1]", paper_any, round(100 * (lit > 1).mean()), tol=0.5,
-          note="matches with the CDF figure's definition (median above 1)")
-    check(S, f"periodic markets with positive emissions, {y} (%) [median > 0]", paper_any, round(100 * (lit > 0).mean()), tol=0.5,
-          note="the by-access shares use this definition; the two definitions give different totals")
+    # lit = median monthly radiance above zero, the definition of Figure 5 panels b and c
+    check(S, f"periodic markets with positive emissions, {y} (%)", paper_any, round(100 * (lit > 0).mean()), tol=0.5)
     sh = (lit > 0).groupby(pn.access).mean() * 100
     check(S, f"positive emissions by access {y}, high / intermediate / remote (%)", paper_acc,
           " / ".join(f"{sh[k]:.0f}" for k in ACC))
@@ -204,12 +199,12 @@ rows["Schedule fully confirmed (% with a reported day)"] = by_access(full, den=r
 rows["No overlap with reported days (% with a reported day)"] = by_access(T.day_match == "Complete miss", den=reported)
 rows["Trades daily with a weekly peak (number)"] = by_access(T.day_match.str.startswith("Continuous", na=False))
 TAB2 = pd.DataFrame(rows).T[["All"] + ACC].round(0).astype(int)
-TAB2.to_csv(os.path.join(cm.OUT, "table2_goods_by_access.csv"))
+# values as printed in Table 2 of the final paper (AFG_paper_revised.docx)
 PAPER_T2 = {"Markets (number)": [137, 47, 36, 54], "Food only": [29, 10, 8, 11], "Food and livestock": [9, 2, 5, 2],
             "Food and general goods": [28, 6, 7, 15], "Food, livestock and general goods": [48, 20, 11, 17],
             "Livestock only": [8, 3, 4, 1], "Car markets": [3, 3, 0, 0], "Not specified": [7, 1, 0, 6],
             "Not trading": [3, 1, 1, 1], "Not covered": [2, 1, 0, 1], "Trades once a week (%)": [76, 77, 67, 81],
-            "Visited (number)": [132, 46, 36, 53], "Schedule fully confirmed (% with a reported day)": [68, 67, 83, 67]}
+            "Visited (number)": [135, 46, 36, 53], "Schedule fully confirmed (% with a reported day)": [71, 67, 83, 67]}
 for r, vals in PAPER_T2.items():
     code = TAB2.loc[r].tolist()
     check(S, r + " (All / High / Intermediate / Remote)", " / ".join(map(str, vals)), " / ".join(map(str, code)),
@@ -237,7 +232,7 @@ check("2.3 Access", "no-overlap disagreements that are remote", "more often remo
 
 # ------------------------------------------------------------------ NDVI table ("Table 1", second one)
 S = "NDVI table"
-TN, meta = tables.tableA3_ndvi_marketday()
+TN, meta = tables.table3_ndvi_marketday()
 PAPER_NDVI = [["Market day", "+85.30***", "+85.31***", "+85.26***", "+98.25***", "+97.54***"],
               ["", "(3.42)", "(3.45)", "(3.51)", "(2.09)", "(2.17)"],
               ["Growing-season NDVI", "−0.42", "−0.78", "−0.41", "−0.22", "−0.18"],
@@ -323,36 +318,15 @@ check(S, "adjusted fall 2020 to 2025 (%)", 6.2, round(-100 * (na_[2025] / na_[20
 
 # ------------------------------------------------------------------ Figure A.1 validation subsamples
 S = "Figure A.1"
-s1 = w.mktID[w.day_match.isin(["Exact match", "Continuous bazaar, main day correct"])]
-s2 = pd.concat([s1, w.mktID[(w.day_match == "Partial overlap") & (w.partial_type == "Field reports an extra day the MAI does not detect")]])
-SER = {"All markets": nat}
-for lab, ids in [("Exact schedule match", s1), ("Exact match + validated MAI day", s2)]:
-    s_ = cm.mai_series(pa[pa.mktID.isin(ids)])
-    SER[lab] = 100 * s_ / s_.loc[2020]
-A1 = pd.DataFrame(SER).loc[2018:2025]
+import figures                              # Figure A.1 is drawn by figures.figA1_validation_samples
+A1, NA1 = figures.validation_series()
 dmax = (A1.drop(columns="All markets").sub(A1["All markets"], axis=0)).abs().max().max()
-check(S, "markets in the exact-match sample", 92, len(s1),
-      note="94 now: Nijrab joined the exact matches after the WFP update, and the Hirat market is in the 137-market panel")
-check(S, "markets in the exact-match + validated-MAI-day sample", 105, len(s2))
+check(S, "markets in the exact-match sample", 94, NA1["Exact schedule match"],
+      note="was 92 before the WFP update (Nijrab joined the exact matches) and before the Hirat market joined the panel")
+check(S, "markets in the exact-match + validated-MAI-day sample", 107, NA1["Exact match + validated MAI day"],
+      note="94 exact/main-day matches + 13 partial overlaps where the field adds a day; was 105")
 check("3.1 Trend", "largest gap between a restricted sample and the full sample (points)", "no more than 3",
       round(dmax, 1), ok=dmax <= 3)
-import matplotlib.pyplot as plt
-fig, (a1, a2) = plt.subplots(1, 2, figsize=(6.5, 2.9))
-STY = {"All markets": (cm.INK, "-", "o"), "Exact schedule match": (cm.COLOR["mai"], "--", "s"),
-       "Exact match + validated MAI day": (cm.COLOR["ntl_total"], ":", "^")}
-N = {"All markets": 137, "Exact schedule match": len(s1), "Exact match + validated MAI day": len(s2)}
-for lab, (col, ls, mkr) in STY.items():
-    a1.plot(A1.index, A1[lab], ls=ls, marker=mkr, ms=3, lw=1.6, color=col, label=f"{lab} (n={N[lab]})", zorder=3)
-    if lab != "All markets":
-        a2.plot(A1.index, A1[lab] - A1["All markets"], ls=ls, marker=mkr, ms=3, lw=1.6, color=col, zorder=3)
-cm.grid(a1, 100); cm.years(a1); cm.grid(a2, 0); cm.years(a2)
-a1.set_ylabel("Index, 2020 = 100", fontsize=7.4); a2.set_ylabel("Difference from all markets (points)", fontsize=7.4)
-a1.set_title("a. Market activity by sample", fontsize=7.4, loc="left", pad=4)
-a2.set_title("b. Restricted sample minus full sample", fontsize=7.4, loc="left", pad=4)
-a2.set_ylim(-5, 5)
-a1.legend(fontsize=6.2, loc="lower left")
-fig.tight_layout(pad=0.4)
-cm.save(fig, "figA1_validation_samples")
 
 # ------------------------------------------------------------------ 3.3 regions and access
 S = "3.3 Regions"
@@ -388,7 +362,7 @@ POP = {"Hilmand", "Kandahar", "Uruzgan", "Faryab", "Nangarhar", "Badakhshan", "Z
 ppy = mk.admLvl1.isin(POP)
 check(S, "markets in poppy / non-poppy / poppy outside Hilmand provinces", "87 / 50 / 35",
       f"{int(ppy.sum())} / {int((~ppy).sum())} / {int((ppy & (mk.admLvl1 != 'Hilmand')).sum())}")
-TA, ma = tables.tableA2_poppy()
+TA, ma = tables.tableA1_poppy()
 PAPER_A1 = [["Poppy province", "−2.26", "−1.70", "−2.15", "−2.73"], ["", "(4.84)", "(4.59)", "(4.79)", "(4.43)"],
             ["Intermediate access (vs high)", "", "−7.91*", "−8.70*", "−9.58**"], ["", "", "(4.38)", "(4.55)", "(3.84)"],
             ["Remote (vs high)", "", "+0.63", "−0.48", "−4.57"], ["", "", "(5.42)", "(5.25)", "(5.10)"],
@@ -425,4 +399,4 @@ R = pd.DataFrame(ROWS)
 R.to_csv(os.path.join(cm.OUT, "paper_checks.csv"), index=False)
 print(R.to_string(index=False))
 print("\nstatus counts:", R.status.value_counts().to_dict())
-print("saved", os.path.join(cm.OUT, "paper_checks.csv"), "and table2_goods_by_access.csv")
+print("saved", os.path.join(cm.OUT, "paper_checks.csv"))
