@@ -12,8 +12,8 @@ Status: "match" (equal at the paper's precision), "close" (within the stated tol
 "DIFFERS", or "not reproducible" (no code or data in this repository).
 
 The field-validation shares of Table 1, Figure 7 and Figure A.3 come from
-ActivityLevelsCehcks..ipynb, and Figure 10 from stata/run_event_study_ACCESS.do; they are
-checked there, not here.
+ActivityLevelsCehcks..ipynb, and Figures 9 and 10 from event_study.py (checked in verify.py);
+they are checked there, not here.
 """
 import os
 import re

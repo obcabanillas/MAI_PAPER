@@ -1,14 +1,16 @@
 # Figures and tables — Afghanistan periodic markets (MAI)
 
 Builds the paper exhibits listed below from the data, and verifies the series
-behind them. The paper's other exhibits are made by the notebooks and the Stata
-do-file; `../EXHIBITS.md` lists every exhibit and where it is made.
+behind them. The paper's other exhibits are made by the notebooks;
+`../EXHIBITS.md` lists every exhibit and where it is made. The event study behind
+Figures 9 and 10 is `event_study.py` (it replaced `../stata/run_event_study_ACCESS.do`).
 
 | Paper exhibit | Function | File |
 |---|---|---|
 | Figure 5, panel a | `figures.fig05a_access_categories` | `fig05a_access_categories.png` |
 | Figure 8 | `figures.fig08_regions` | `fig08_regions.png` |
-| Figure A.1 | `figures.figA1_validation_samples` | `figA1_validation_samples.png` |
+| Figures 9 and 10 | `event_study.main` | `fig09ab_access_population.png`, `fig09cd_trading_days.png`, `fig10ab_ntl.png` |
+| Figure A.1, panels a and b | `figures.figA1_validation_samples` | `figA1a_validation_samples.png`, `figA1b_validation_difference.png` |
 | Figure A.2 | `figures.figA2_poppy` | `figA2_poppy.png` |
 | Figure A.4, panel a | `figures.figA4a_overpass_composition` | `figA4a_overpass_composition.png` |
 | Figure A.4, panel b | `figures.figA4b_overpass_effects` | `figA4b_overpass_effects.png` |
@@ -42,15 +44,20 @@ every figure and table was produced and every check passed.
 To run against a different data tree, point `MAI_ROOT` at it; it takes
 precedence over the bundled `data/`.
 
-Python 3.11 with `pandas`, `numpy`, `geopandas`, `statsmodels`, `scipy`,
-`matplotlib`, `openpyxl`, `xlrd`.
+Python 3.10 or later with `pandas` (2.x), `numpy`, `geopandas`, `statsmodels`,
+`scipy`, `matplotlib`, `openpyxl`, `xlrd`, `pyfixest` (the event study) and, for
+`place_in_docx.py`, `lxml` and `Pillow`.
 
 ## What each file does
 
 | File | Contents |
 |---|---|
-| `common.py` | Path resolution, the colour palette, and the shared helpers: `panel()`, `mai_series()`, `market_year_activity()`, `buffer_ntl()`, `access_categories()`, `haversine()`, `market_index()`, `frequency_pairs()`, `district_control_2020()`, `ntl_per_capita_by_control()`, `ntl_national()`, `ndvi_levels()`, `staggering_test()`, `check_inputs()`. |
-| `figures.py` | One function per paper figure file (table above). `ALL` lists them. |
+| `style.py` | The house style for every paper figure: palette, printed sizes, fonts, saving. Imports nothing from `common.py`, so the notebooks use it too. |
+| `event_study.py` | The event-study regressions behind Figures 9 and 10 (replaces the Stata do-file): figure data, regression tables and joint tests in `output_paper/event_study/`. |
+| `place_in_docx.py` | Writes a copy of the manuscript with the current figures in their slots (found by caption) and the data tables in one style; the original is not changed. |
+| `plots.py` | One drawing function per paper figure panel, including the ones the notebooks compute; each takes the figure's data and returns the figure at its printed size. |
+| `common.py` | Path resolution and the shared helpers: `panel()`, `mai_series()`, `market_year_activity()`, `buffer_ntl()`, `access_categories()`, `haversine()`, `market_index()`, `frequency_pairs()`, `district_control_2020()`, `ntl_per_capita_by_control()`, `ntl_national()`, `ndvi_levels()`, `staggering_test()`, `check_inputs()`. |
+| `figures.py` | One function per paper figure (table above): computes the data, saves it to `paper_exhibits/data/` and draws it with `plots.py`. `ALL` lists them. |
 | `tables.py` | One function per paper table (table above). Each returns the table as laid out in the paper and a dict of metadata. |
 | `verify.py` | Checks of the data and series behind the exhibits against published values and the shipped `reference/` fixtures. |
 | `paper_checks.py` | Compares numbers quoted in the text with the code; writes `paper_checks.csv`. Makes no exhibit. |

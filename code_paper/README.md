@@ -14,12 +14,14 @@ code_paper/
   NDVI_processing/             district NDVI for the event-study panel (own README)
   data_build/                  raw data -> derived market panel, access categories, market NDVI; two-day-market panel
   build_event_study_panel.ipynb  the market-year panel for the event study (processed_data/event_study_panel.dta)
-  exhibits/                    Figures 5a, 8, A.1, A.2, A.4; Tables 1, 2, 3, A.1; paper_checks.py
-  stata/run_event_study_ACCESS.do  Figures 9 and 10, the event study
+  exhibits/                    Figures 5a, 8, A.1, A.2, A.4; Tables 1, 2, 3, A.1; paper_checks.py;
+                               style.py (house style) and plots.py (draws every figure but 9 and 10)
+  exhibits/event_study.py      Figures 9 and 10, the event study (replaces stata/run_event_study_ACCESS.do,
+                               kept for reference)
   Results_paper_stats.ipynb    Figures 3 and 7; also writes processed_data/market_images.csv
   Results_paper.ipynb          Figure 5b-c
   ActivityLevelsCehcks..ipynb  Figures 6 and A.3 (market-day validation tests and seasonality)
-  figure4_population_coverage.py  Figure 4a (needs the detection team's Earth Engine assets)
+  figure4_population_coverage.py  Figure 4a and 4b (needs the detection team's Earth Engine assets)
   archive/                     code for exhibits not in the final paper (not maintained)
 ```
 
@@ -42,8 +44,9 @@ MarketActivityIndex/
 
 `exhibits/` finds its inputs through `config.py` as well (see `exhibits/common.py`); `exhibits/paths.json`
 can pin individual files. Python 3.10 (the `py310` environment) with pandas, numpy, statsmodels, scipy,
-matplotlib, seaborn, geopandas, shapely, rasterio, rasterstats, pyproj, openpyxl and xlrd. Stata 19 with
-`reghdfe`, `ftools`, `coefplot` and `outreg2` for the event study.
+matplotlib, seaborn, geopandas, shapely, rasterio, rasterstats, pyproj, openpyxl, xlrd, pyfixest (the
+event study), earthengine-api (Figure 4), and lxml and Pillow (`exhibits/place_in_docx.py`). Stata is no longer
+needed; the do-file it ran is kept for reference.
 
 ## Order to run
 
@@ -56,7 +59,7 @@ matplotlib, seaborn, geopandas, shapely, rasterio, rasterstats, pyproj, openpyxl
 | 5 | `Results_paper_stats.ipynb` (run all) | `processed_data/market_images.csv`; Figures 3, 7 |
 | 6 | `cd exhibits && python run_all.py` | Figures 5a, 8, A.1, A.2, A.4; Tables 1, 2, 3, A.1; data checks |
 | 7 | `Results_paper.ipynb`, `ActivityLevelsCehcks..ipynb` (run all) | Figures 5b-c, 6, A.3 |
-| 8 | `cd stata && stata -b do run_event_study_ACCESS.do` | Figures 9, 10 |
+| 8 | (in step 6: `exhibits/event_study.py`) | Figures 9, 10; regression tables and tests in `output_paper/event_study/` |
 | 9 | `cd exhibits && python paper_checks.py` | `output_paper/exhibits/paper_checks.csv` (numbers in the text vs the code) |
 
 Steps 1-4 only need rerunning when the raw data change. Step 3's comparison should report every column as
@@ -75,7 +78,7 @@ See `EXHIBITS.md`.
 | Market detection: the 137 market outlines, their trading days and the per-image activity readings (`forAFG_paper_activity_all.csv`, the market registry) | Produced by the PlanetScope / Sentinel-2 pipeline (von Carnap et al. 2026), run outside this project; includes the 729 OSM locations, the 25% search area and the 2,500 screened candidates |
 | Figure 1, the detection method | Adapted from von Carnap et al. (2026); not generated from data |
 | Figure 2, a market on market and non-market days | Esri World Imagery Wayback scenes |
-| Figure 4, population within 20 km (the 40% and 90% shares) | Panel a is `figure4_population_coverage.py`, from the detection team's notebook; it needs their Earth Engine assets and has not been run here. Panel b (OSM markets) is external: no code for it exists in this repository |
+| Figure 4, the ring tables (population and area within each distance) | Built in Earth Engine by the detection team: around detected markets (`Afghanistan_ringsghsl*`, rebuildable with `figure4_population_coverage.py --build`) and around OSM marketplaces (`Afghanistanadm1_ringsghsl*_osm2`, whose code is not here). `figure4_population_coverage.py` reads both |
 | WFP field validation (`data/WFP_validation/market_validation_corrected.xlsx`) | Field data, compiled by hand |
 | Travel times, catchment populations, nighttime-light buffers, monthly NDVI zonal statistics | Geospatial outputs (GRUFS, WorldPop, VIIRS, MODIS) in `data/Geospatial Analysis Outputs/`; the scripts that produced them are not in this repository, except the VIIRS buffers (`NTL_processing/`) |
 | National accounts, ACLED, control-status panel, UNODC poppy areas | External data |

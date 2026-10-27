@@ -1,6 +1,9 @@
 """
-PAPER FIGURE 4, panel a: share of population and area within a given distance of a
-detected periodic market. Output: output_paper/paper_exhibits/fig04a_population_coverage.png
+PAPER FIGURE 4: share of population and area within a given distance of a market.
+  panel a: detected periodic markets            fig04a_population_coverage.png
+  panel b: OpenStreetMap marketplaces           fig04b_osm_coverage.png
+  both, as the paper sets them side by side     fig04_population_coverage.png
+(in output_paper/paper_exhibits; drawn by exhibits/plots.py)
 
 Extracted from MAI_AFG/Code/AFG20250825.ipynb (cells 9-11 and 13), the detection
 team's notebook, with the database credentials removed. The logic is unchanged.
@@ -19,8 +22,11 @@ Population is the JRC GHSL 2023A population grid for 2020 (the paper's source
 note says WorldPop 2020). "Major cities" are removed with the detection team's
 city mask.
 
-Panel b (the same shares for OpenStreetMap marketplaces) is not produced by any
-code in this repository; it is an external input to the paper (see EXHIBITS.md).
+Panel b reads the detection team's OpenStreetMap ring tables (OSM_RING_ASSET and its
+"without cities" twin), built the same way around OSM marketplaces that do not
+coincide with a periodic market. They reproduce the bars of the panel b image in
+the manuscript; the code that built them is not in this repository. (The earlier
+"_osm" tables, without the 2, give higher shares and are not the paper's.)
 
     python figure4_population_coverage.py          # plot from the existing ring tables
     python figure4_population_coverage.py --build  # rebuild the ring tables first
@@ -30,19 +36,20 @@ import sys
 
 import ee
 import geopandas as gpd
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from shapely.geometry import Point
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "NTL_processing"))
-from config import PAPER_EXHIBITS  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "exhibits"))
+import plots as P  # noqa: E402  (draws the figure in the house style of exhibits/style.py)
+import style as S  # noqa: E402
 
 COUNTRY = "Afghanistan"
 RING_ASSET = f"projects/planetupload/assets/cleanedLocs/{COUNTRY}_ringsghsl"
 RING_ASSET_NOCITIES = RING_ASSET + "_withoutcities"
 CITY_MASK = "projects/mali-candidate-locs/assets/afghanistan-candidate-locs/cityMask"
+OSM_RING_ASSET = "projects/planetupload/assets/cleanedLocs/Afghanistanadm1_ringsghsl_osm2"
+OSM_RING_ASSET_NOCITIES = "projects/planetupload/assets/cleanedLocs/Afghanistanadm1_ringsghsl_withoutcities_osm2"
 
 # National totals, from the original notebook.
 TOTAL_POPULATION = 30830426
@@ -50,8 +57,6 @@ TOTAL_POPULATION_NOCITIES = 21660128
 TOTAL_AREA_KM2 = 652867
 
 POPULATION_LIMITS = [0, 500, 1000, 5000, 100000]
-COLORS = [mcolors.to_hex((v, v, v)) for v in np.linspace(1, 0, len(POPULATION_LIMITS) - 1)]
-COLOR3 = "#e76f51"
 
 ee.Initialize(project=os.environ.get("EE_PROJECT", "p155mali1"))
 
@@ -127,10 +132,11 @@ def _ring_table(asset):
     return pd.DataFrame([f["properties"] for f in feats])
 
 
-def pop_share_plot(ax):
-    """Cell 11: bars of population and area shares by distance band."""
-    df_b = _ring_table(RING_ASSET)
-    df_b_nocities = _ring_table(RING_ASSET_NOCITIES)
+def coverage_table(asset=RING_ASSET, asset_nocities=RING_ASSET_NOCITIES):
+    """Cell 11: population and area shares by distance band (the data of Figure 4a;
+    with the OSM assets, of Figure 4b). Same national totals for both."""
+    df_b = _ring_table(asset)
+    df_b_nocities = _ring_table(asset_nocities)
     df_b = df_b.merge(df_b_nocities[["radius", "population"]], on="radius",
                       suffixes=("", "_nocities"))
 
@@ -142,32 +148,18 @@ def pop_share_plot(ax):
     df_bb = df_bb[df_bb["radius"] < 50000]
     df_bb = df_bb[["radius_km", "population_share", "area_share", "population_share_nocities"]]
     print(df_bb.to_string(index=False))
-
-    x_vals = range(len(df_bb))
-    labels = df_bb["radius_km"].map(lambda x: str(int(x)) if x == int(x) else f"{x:.1f}")
-
-    ax.bar(x_vals, df_bb["population_share_nocities"], label="Population excl. major cities",
-           color="none", edgecolor=COLOR3, linewidth=1.25, linestyle="--")
-    ax.bar(x_vals, df_bb["population_share"], label="Population",
-           color="none", edgecolor=COLOR3, linewidth=1.25)
-    ax.bar(list(x_vals), df_bb["area_share"], label="Area",
-           color="none", edgecolor=COLORS[2], linewidth=1.25, width=0.5)
-    ax.set_xticks(x_vals)
-    ax.set_xticklabels(labels)
-    ax.set_xlabel("Distance from nearest detected marketplace (km)")
-    ax.set_ylabel("Share within given distance")
-    ax.legend(frameon=False)
-    ax.grid(False)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    return df_bb
 
 
 def plot():
-    out = os.path.join(PAPER_EXHIBITS, "fig04a_population_coverage.png")
-    fig, ax = plt.subplots(figsize=(6, 4.5))
-    pop_share_plot(ax)
-    fig.savefig(out, dpi=300, bbox_inches="tight")
-    print("saved", out)
+    """Save the figure data and draw it with exhibits/plots.py."""
+    a = coverage_table()
+    b = coverage_table(OSM_RING_ASSET, OSM_RING_ASSET_NOCITIES)
+    S.save_data(a, "fig04a_population_coverage")
+    S.save_data(b, "fig04b_osm_coverage")
+    S.save(P.fig04a_population_coverage(a), "fig04a_population_coverage")
+    S.save(P.fig04b_osm_coverage(b), "fig04b_osm_coverage")
+    S.save(P.fig04_population_coverage({"a": a, "b": b}), "fig04_population_coverage")
 
 
 if __name__ == "__main__":

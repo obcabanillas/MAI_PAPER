@@ -1,12 +1,13 @@
-"""Shared paths, palette and style for the figure replication package.
+"""Shared paths and data builders for the figure replication package.
 
-Every figure script imports from here so that a variable appearing in more than
-one figure carries the same colour throughout.
+The figures' palette, sizes and fonts are in style.py and the drawing in
+plots.py; this module finds the inputs and computes the series they draw.
 """
-import os, warnings
+import os, sys, warnings
 warnings.filterwarnings('ignore')
 import matplotlib
-matplotlib.use('Agg')
+if 'ipykernel' not in sys.modules:      # scripts render off-screen; notebooks keep inline display
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd, numpy as np
 
@@ -176,43 +177,12 @@ REF_NTL_NAT  = os.path.join(REFERENCE, '04_ntl_national.csv')
 REF_STAGGER  = os.path.join(REFERENCE, 'staggering_test.csv')
 REF_POPPY    = os.path.join(REFERENCE, 'mai_poppy_splits.csv')
 
-# --------------------------------------------------------------- palette
-COLOR = {
-    'mai':        '#1baf7a',   # Market Activity Index
-    'ntl_total':  '#2a78d6',   # total civilian nighttime lights
-    'ntl_buffer': '#eb6834',   # nighttime lights in 10 km market buffers
-    'ndvi':       '#eda100',   # growing-season NDVI
-    'ag_gdp':     '#4a3aa7',   # agricultural real GDP
-    'tot_gdp':    '#e87ba4',   # total real GDP
-    'high':       '#1baf7a', 'inter': '#eb6834', 'remote': '#2a78d6',
-    'gov':        '#2a78d6', 'contested': '#eb6834', 'taliban': '#e87ba4',
-    'grey':       '#b9b9b3',
-}
-LABEL = {'mai': 'Market Activity Index', 'ntl_total': 'Total nightlights',
-         'ntl_buffer': 'Nightlights in market buffers', 'ndvi': 'Growing-season NDVI',
-         'ag_gdp': 'Agricultural real GDP', 'tot_gdp': 'Total real GDP'}
-INK, MUTED, GRID, RULE = '#1a1a1a', '#52514e', '#e4e4e0', '#cfcfca'
+# --------------------------------------------------------------- shared constants
+# The palette, sizes and fonts are in style.py; importing it applies the house style.
+import style as _style  # noqa: F401
 YEARS = list(range(2018, 2026))
-REGIONS = ['Central', 'East', 'NorthEast', 'NorthWest', 'SouthEast', 'SouthWest', 'West']
-RNAME = {'NorthEast': 'North East', 'NorthWest': 'North West',
-         'SouthEast': 'South East', 'SouthWest': 'South West'}
-
-plt.rcParams.update({
-    'font.family': 'DejaVu Sans', 'font.size': 8.5,
-    'axes.edgecolor': '#bdbdb8', 'axes.linewidth': 0.8,
-    'axes.labelcolor': INK, 'text.color': INK,
-    'xtick.color': MUTED, 'ytick.color': MUTED,
-    'xtick.labelsize': 7.5, 'ytick.labelsize': 7.5,
-    'axes.spines.top': False, 'axes.spines.right': False,
-    'figure.facecolor': 'white', 'axes.facecolor': 'white',
-    'savefig.facecolor': 'white', 'legend.frameon': False})
-
-def grid(ax, h=None, axis='y'):
-    ax.grid(axis=axis, color=GRID, lw=0.6, zorder=0); ax.set_axisbelow(True)
-    if h is not None: ax.axhline(h, color=RULE, lw=0.9, zorder=1)
-
-def years(ax, yrs=YEARS):
-    ax.set_xticks(yrs); ax.set_xticklabels([str(y)[2:] for y in yrs])
+REGIONS = _style.REGIONS
+RNAME = _style.REGION_NAME
 
 def save(fig, name, folder=None):
     """Save a figure as PNG. Paper exhibits pass folder=PAPER (see save_paper)."""

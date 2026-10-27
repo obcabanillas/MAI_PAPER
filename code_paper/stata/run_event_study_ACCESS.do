@@ -1,4 +1,9 @@
 *------------------------------------------------------------------------------
+* SUPERSEDED (October 2026): the official version of these regressions, tables and
+* figures is code_paper/exhibits/event_study.py (Python, pyfixest), which reproduces
+* this file's estimates; exhibits/verify.py checks it against the figures this file
+* drew. Kept for reference and cross-checking.
+*
 * MAI event-study regressions: Figures 9 and 10 of the paper
 *
 *   PAPER EXHIBIT        SECTION BELOW                         FILE (in paper_exhibits)
@@ -135,6 +140,16 @@ global paper_out  = "$root/../output_paper/paper_exhibits"
 cap mkdir "$out_file"
 cap mkdir "$paper_out"
 
+* Figure colours, matching exhibits/style.py (the paper's colour vocabulary): market
+* activity is orange, nighttime lights green; groups of markets are shades of that
+* hue, dark to light (high -> remote access, multi-day -> single-day, first -> second).
+global mai_dark  "129 62 45"     // #813e2d
+global mai_mid   "212 102 74"    // #d4664a
+global mai_light "238 151 129"   // #ee9781
+global ntl_dark  "17 77 42"      // #114d2a
+global ntl_mid   "28 127 70"     // #1c7f46
+global ntl_light "93 171 126"    // #5dab7e
+
 
 *==============================================================================
 * POOLED REGRESSIONS
@@ -202,14 +217,14 @@ foreach a in H Int R {
 }
 
 coefplot (matrix(B_1), ci(C_1) label("High access") offset(-0.2)                          ///
-             msymbol(O) mcolor("0 114 178") ciopts(recast(rcap) lcolor("0 114 178")))     ///
+             msymbol(O) mcolor("$mai_dark") ciopts(recast(rcap) lcolor("$mai_dark")))           ///
          (matrix(B_2), ci(C_2) label("Intermediate access") offset(0)                     ///
-             msymbol(S) mcolor("230 159 0") ciopts(recast(rcap) lcolor("230 159 0")))     ///
+             msymbol(S) mcolor("$mai_mid") ciopts(recast(rcap) lcolor("$mai_mid")))             ///
          (matrix(B_3), ci(C_3) label("Remote") offset(0.2)                                ///
-             msymbol(T) mcolor("0 158 115") ciopts(recast(rcap) lcolor("0 158 115"))),    ///
+             msymbol(T) mcolor("$mai_light") ciopts(recast(rcap) lcolor("$mai_light"))),        ///
     vertical coeflabels(`lb')                                               ///
     yline(0, lcolor(black) lpattern(dash))                                  ///
-    xline(3, lcolor(gs10))                                                  ///
+    xline(3, lcolor(gs10) lpattern(dash) lwidth(medthin))                   ///
     legend(rows(1) position(6) size(medium))                                ///
     xlabel(, angle(vertical) labsize(large))  ylabel(, labsize(large))      ///
     graphregion(margin(vsmall))                                             ///
@@ -305,12 +320,12 @@ forvalues v = `L'(`step')`U' {
 }
 
 coefplot (matrix(B_dens), ci(C_dens) label("Log catchment population (left axis)") offset(-0.15) ///
-             msymbol(O) mcolor("0 114 178") ciopts(recast(rcap) lcolor("0 114 178")))          ///
+             msymbol(O) mcolor("$mai_dark") ciopts(recast(rcap) lcolor("$mai_dark")))           ///
          (matrix(B_ASINtrav), ci(C_ASINtrav) label("asinh(travel time) (right axis)") offset(0.15) ///
-             msymbol(S) mcolor("230 159 0") ciopts(recast(rcap) lcolor("230 159 0")) axis(2)), ///
+             msymbol(S) mcolor("$mai_light") ciopts(recast(rcap) lcolor("$mai_light")) axis(2)), ///
     vertical coeflabels(`lb')                                                     ///
     yline(0, lcolor(black) lpattern(dash))                                        ///
-    xline(3, lcolor(gs10))                                                        ///
+    xline(3, lcolor(gs10) lpattern(dash) lwidth(medthin))                         ///
     ytitle("Index points per log point of population", axis(1))                  ///
     ytitle("Index points per unit of asinh(travel)", axis(2))                    ///
     yscale(range(`L' `U') axis(1)) ylabel(`lab1', labsize(large) axis(1))        ///
@@ -381,12 +396,12 @@ foreach t in single multi {
 }
 
 coefplot (matrix(B_single), ci(C_single) label("Single-day markets") offset(-0.15)  ///
-             msymbol(O) mcolor("0 114 178") ciopts(recast(rcap) lcolor("0 114 178")))  ///
+             msymbol(O) mcolor("$mai_light") ciopts(recast(rcap) lcolor("$mai_light")))         ///
          (matrix(B_multi), ci(C_multi) label("Multi-day markets") offset(0.15)      ///
-             msymbol(S) mcolor("230 159 0") ciopts(recast(rcap) lcolor("230 159 0"))), ///
+             msymbol(S) mcolor("$mai_dark") ciopts(recast(rcap) lcolor("$mai_dark"))),          ///
     vertical coeflabels(`lb')                                               ///
     yline(0, lcolor(black) lpattern(dash))                                  ///
-    xline(3, lcolor(gs10))                                                  ///
+    xline(3, lcolor(gs10) lpattern(dash) lwidth(medthin))                   ///
     ytitle("Index points")                                                  ///
     legend(rows(1) position(6) size(medium))                                ///
     xlabel(, angle(vertical) labsize(large))  ylabel(, labsize(large))      ///
@@ -497,12 +512,12 @@ foreach M in B_A C_A B_B C_B {
 }
 
 coefplot (matrix(B_A), ci(C_A) label("First trading day") offset(-0.15)                ///
-             msymbol(O) mcolor("0 114 178") ciopts(recast(rcap) lcolor("0 114 178")))  ///
+             msymbol(O) mcolor("$mai_dark") ciopts(recast(rcap) lcolor("$mai_dark")))           ///
          (matrix(B_B), ci(C_B) label("Second trading day") offset(0.15)                ///
-             msymbol(S) mcolor("230 159 0") ciopts(recast(rcap) lcolor("230 159 0"))), ///
+             msymbol(S) mcolor("$mai_light") ciopts(recast(rcap) lcolor("$mai_light"))),        ///
     vertical coeflabels(`lb')                                               ///
     yline(0, lcolor(black) lpattern(dash))                                  ///
-    xline(3, lcolor(gs10))                                                  ///
+    xline(3, lcolor(gs10) lpattern(dash) lwidth(medthin))                   ///
     note("Relative to the first trading day in 2020." "Days ordered Saturday-Friday.", size(small)) ///
     legend(rows(1) position(6) size(medium))                                ///
     xlabel(, angle(vertical) labsize(large))  ylabel(, labsize(large))      ///
@@ -556,14 +571,14 @@ foreach a in H Int R {
 }
 
 coefplot (matrix(B_1), ci(C_1) label("High access") offset(-0.2)                          ///
-             msymbol(O) mcolor("0 114 178") ciopts(recast(rcap) lcolor("0 114 178")))     ///
+             msymbol(O) mcolor("$ntl_dark") ciopts(recast(rcap) lcolor("$ntl_dark")))           ///
          (matrix(B_2), ci(C_2) label("Intermediate access") offset(0)                     ///
-             msymbol(S) mcolor("230 159 0") ciopts(recast(rcap) lcolor("230 159 0")))     ///
+             msymbol(S) mcolor("$ntl_mid") ciopts(recast(rcap) lcolor("$ntl_mid")))             ///
          (matrix(B_3), ci(C_3) label("Remote") offset(0.2)                                ///
-             msymbol(T) mcolor("0 158 115") ciopts(recast(rcap) lcolor("0 158 115"))),    ///
+             msymbol(T) mcolor("$ntl_light") ciopts(recast(rcap) lcolor("$ntl_light"))),        ///
     vertical coeflabels(`lb')                                               ///
     yline(0, lcolor(black) lpattern(dash))                                  ///
-    xline(3, lcolor(gs10))                                                  ///
+    xline(3, lcolor(gs10) lpattern(dash) lwidth(medthin))                   ///
     ytitle("asinh(NTL), change from 2020")                                  ///
     legend(rows(1) position(6) size(medium))                                ///
     xlabel(, angle(vertical) labsize(large))  ylabel(, labsize(large))      ///
@@ -615,12 +630,12 @@ foreach t in dens ASINtrav {
 }
 
 coefplot (matrix(B_dens), ci(C_dens) label("Log catchment population") offset(-0.15)   ///
-             msymbol(O) mcolor("0 114 178") ciopts(recast(rcap) lcolor("0 114 178")))   ///
+             msymbol(O) mcolor("$ntl_dark") ciopts(recast(rcap) lcolor("$ntl_dark")))           ///
          (matrix(B_ASINtrav), ci(C_ASINtrav) label("asinh(travel time)") offset(0.15)  ///
-             msymbol(S) mcolor("230 159 0") ciopts(recast(rcap) lcolor("230 159 0"))),  ///
+             msymbol(S) mcolor("$ntl_light") ciopts(recast(rcap) lcolor("$ntl_light"))),        ///
     vertical coeflabels(`lb')                                               ///
     yline(0, lcolor(black) lpattern(dash))                                  ///
-    xline(3, lcolor(gs10))                                                  ///
+    xline(3, lcolor(gs10) lpattern(dash) lwidth(medthin))                   ///
     ytitle("asinh(NTL) per unit")                                           ///
     legend(rows(1) position(6) size(medsmall))                              ///
     xlabel(, angle(vertical) labsize(large))  ylabel(, labsize(large))      ///

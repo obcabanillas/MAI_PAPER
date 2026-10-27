@@ -25,3 +25,11 @@ be substituted for one another:
 They correlate at about 0.97 but differ materially in level — 2018 is −1.59 on
 the first and −0.84 on the second. Which one Figure 6 should use is a question
 for the authors; the package currently reproduces this file.
+
+## stata_event_study_coefs.csv
+
+The point estimates of Figures 9 and 10 as the Stata do-file drew them
+(`stata/run_event_study_ACCESS.do`, the version in AFG_paper_revised_tvc_V2_tvc.docx),
+read off the published images to about half an index point (0.005 for the
+nighttime-light panels). `verify.py` checks `event_study.py`, which replaced the
+do-file, against them. Not an input.

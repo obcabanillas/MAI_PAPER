@@ -53,6 +53,14 @@ def main(what='all'):
         import figures
         print('\n== figures')
         good &= _run('figures', figures.ALL)
+        # The paper's images, including the side-by-side pairs, from the data that
+        # figures.py, the notebooks and figure4_population_coverage.py saved.
+        import event_study
+        print('\n== event study (Figures 9 and 10)')
+        good &= _run('event-study runs', [event_study.main])
+        import plots
+        print('\n== paper images (plots.save_paper)')
+        good &= _run('paper images', [plots.save_paper])
 
     if what in ('all', 'tables'):
         import tables

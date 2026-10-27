@@ -1,0 +1,113 @@
+figure,series,year,coef
+fig09a_access_categories,High access,2018,6.5
+fig09a_access_categories,High access,2019,5.0
+fig09a_access_categories,High access,2020,0.0
+fig09a_access_categories,High access,2021,16.5
+fig09a_access_categories,High access,2022,17.5
+fig09a_access_categories,High access,2023,4.5
+fig09a_access_categories,High access,2024,-2.5
+fig09a_access_categories,High access,2025,-8.0
+fig09a_access_categories,Intermediate access,2018,4.5
+fig09a_access_categories,Intermediate access,2019,1.0
+fig09a_access_categories,Intermediate access,2020,0.0
+fig09a_access_categories,Intermediate access,2021,3.0
+fig09a_access_categories,Intermediate access,2022,-4.5
+fig09a_access_categories,Intermediate access,2023,-14.0
+fig09a_access_categories,Intermediate access,2024,-25.5
+fig09a_access_categories,Intermediate access,2025,-33.5
+fig09a_access_categories,Remote,2018,1.0
+fig09a_access_categories,Remote,2019,0.0
+fig09a_access_categories,Remote,2020,0.0
+fig09a_access_categories,Remote,2021,13.0
+fig09a_access_categories,Remote,2022,2.0
+fig09a_access_categories,Remote,2023,0.5
+fig09a_access_categories,Remote,2024,-9.0
+fig09a_access_categories,Remote,2025,-18.0
+fig09b_population_travel,Log catchment population,2018,2.0
+fig09b_population_travel,Log catchment population,2019,0.8
+fig09b_population_travel,Log catchment population,2020,0.0
+fig09b_population_travel,Log catchment population,2021,0.6
+fig09b_population_travel,Log catchment population,2022,3.6
+fig09b_population_travel,Log catchment population,2023,1.5
+fig09b_population_travel,Log catchment population,2024,1.7
+fig09b_population_travel,Log catchment population,2025,7.7
+fig09b_population_travel,asinh(travel time),2018,-1.0
+fig09b_population_travel,asinh(travel time),2019,-1.6
+fig09b_population_travel,asinh(travel time),2020,0.0
+fig09b_population_travel,asinh(travel time),2021,0.6
+fig09b_population_travel,asinh(travel time),2022,0.9
+fig09b_population_travel,asinh(travel time),2023,1.1
+fig09b_population_travel,asinh(travel time),2024,1.4
+fig09b_population_travel,asinh(travel time),2025,4.6
+fig09c_two_day_markets,First trading day,2018,8.3
+fig09c_two_day_markets,First trading day,2019,5.7
+fig09c_two_day_markets,First trading day,2020,0.0
+fig09c_two_day_markets,First trading day,2021,3.3
+fig09c_two_day_markets,First trading day,2022,-2.3
+fig09c_two_day_markets,First trading day,2023,-12.3
+fig09c_two_day_markets,First trading day,2024,-20.0
+fig09c_two_day_markets,First trading day,2025,-29.5
+fig09c_two_day_markets,Second trading day,2018,8.2
+fig09c_two_day_markets,Second trading day,2019,5.5
+fig09c_two_day_markets,Second trading day,2020,4.8
+fig09c_two_day_markets,Second trading day,2021,3.0
+fig09c_two_day_markets,Second trading day,2022,-3.5
+fig09c_two_day_markets,Second trading day,2023,-9.8
+fig09c_two_day_markets,Second trading day,2024,-23.5
+fig09c_two_day_markets,Second trading day,2025,-28.5
+fig09d_single_multi_day,Single-day markets,2018,0.0
+fig09d_single_multi_day,Single-day markets,2019,0.6
+fig09d_single_multi_day,Single-day markets,2020,0.0
+fig09d_single_multi_day,Single-day markets,2021,12.5
+fig09d_single_multi_day,Single-day markets,2022,9.6
+fig09d_single_multi_day,Single-day markets,2023,3.5
+fig09d_single_multi_day,Single-day markets,2024,-3.5
+fig09d_single_multi_day,Single-day markets,2025,-12.0
+fig09d_single_multi_day,Multi-day markets,2018,8.4
+fig09d_single_multi_day,Multi-day markets,2019,2.9
+fig09d_single_multi_day,Multi-day markets,2020,0.0
+fig09d_single_multi_day,Multi-day markets,2021,4.3
+fig09d_single_multi_day,Multi-day markets,2022,-0.7
+fig09d_single_multi_day,Multi-day markets,2023,-9.2
+fig09d_single_multi_day,Multi-day markets,2024,-23.0
+fig09d_single_multi_day,Multi-day markets,2025,-28.0
+fig10a_ntl_access_categories,High access,2018,-0.03
+fig10a_ntl_access_categories,High access,2019,-0.025
+fig10a_ntl_access_categories,High access,2020,0.0
+fig10a_ntl_access_categories,High access,2021,0.08
+fig10a_ntl_access_categories,High access,2022,0.04
+fig10a_ntl_access_categories,High access,2023,0.1
+fig10a_ntl_access_categories,High access,2024,0.135
+fig10a_ntl_access_categories,High access,2025,0.27
+fig10a_ntl_access_categories,Intermediate access,2018,-0.11
+fig10a_ntl_access_categories,Intermediate access,2019,-0.05
+fig10a_ntl_access_categories,Intermediate access,2020,0.0
+fig10a_ntl_access_categories,Intermediate access,2021,-0.1
+fig10a_ntl_access_categories,Intermediate access,2022,-0.22
+fig10a_ntl_access_categories,Intermediate access,2023,-0.18
+fig10a_ntl_access_categories,Intermediate access,2024,0.0
+fig10a_ntl_access_categories,Intermediate access,2025,0.19
+fig10a_ntl_access_categories,Remote,2018,-0.045
+fig10a_ntl_access_categories,Remote,2019,-0.015
+fig10a_ntl_access_categories,Remote,2020,0.0
+fig10a_ntl_access_categories,Remote,2021,-0.07
+fig10a_ntl_access_categories,Remote,2022,-0.035
+fig10a_ntl_access_categories,Remote,2023,0.02
+fig10a_ntl_access_categories,Remote,2024,0.065
+fig10a_ntl_access_categories,Remote,2025,0.15
+fig10b_ntl_population_travel,Log catchment population,2018,-0.003
+fig10b_ntl_population_travel,Log catchment population,2019,-0.006
+fig10b_ntl_population_travel,Log catchment population,2020,0.0
+fig10b_ntl_population_travel,Log catchment population,2021,0.016
+fig10b_ntl_population_travel,Log catchment population,2022,-0.024
+fig10b_ntl_population_travel,Log catchment population,2023,0.022
+fig10b_ntl_population_travel,Log catchment population,2024,0.028
+fig10b_ntl_population_travel,Log catchment population,2025,0.081
+fig10b_ntl_population_travel,asinh(travel time),2018,0.01
+fig10b_ntl_population_travel,asinh(travel time),2019,-0.003
+fig10b_ntl_population_travel,asinh(travel time),2020,0.0
+fig10b_ntl_population_travel,asinh(travel time),2021,-0.023
+fig10b_ntl_population_travel,asinh(travel time),2022,-0.035
+fig10b_ntl_population_travel,asinh(travel time),2023,-0.002
+fig10b_ntl_population_travel,asinh(travel time),2024,0.003
+fig10b_ntl_population_travel,asinh(travel time),2025,0.046

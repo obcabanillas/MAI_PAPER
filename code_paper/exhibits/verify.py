@@ -88,6 +88,23 @@ chk('markets trading twice a week', float((_nd == 2).sum()), 32, 0)
 chk('markets trading three times a week', float((_nd == 3).sum()), 1, 0)
 chk('total market-days', float(_nd.sum()), 171, 0)
 
+# Figures 9 and 10: the Python event study against the paper's text and against the
+# coefficients of the published Stata figures (read off the images; see reference/README.md)
+import event_study as _es
+_F, _T = _es.estimate()
+chk('event study: observations, regressions 1, 2 and 4', _F['1'].N, 1084, 0)
+chk('event study: province clusters', _F['1'].G, 24, 0)
+chk('event study: markets', _F['1'].data.mktID.nunique(), 137, 0)
+chk('event study: high access 2022 ("about 18 points")', float(_F['1'].b['X_Access_H_2022']), 18, 1)
+_fd = _es.figure_data(_F)
+_st = _ref(os.path.join(C.REFERENCE, 'stata_event_study_coefs.csv'))
+if _st is not None:
+    for fig, g in _st.groupby('figure'):
+        got = _fd[fig].merge(g, on=['series', 'year'], suffixes=('', '_stata'))
+        tol = 0.01 if fig.startswith('fig10') else 0.5
+        chk(f'{fig} matches the Stata figure (max gap)',
+            float((got.coef - got.coef_stata).abs().max()), 0.0, tol)
+
 w = max(len(c[0]) for c in CHECKS)
 print(f'{"check".ljust(w)}  {"got":>9} {"expected":>9}  ok')
 for n, g, e, t, ok in CHECKS:

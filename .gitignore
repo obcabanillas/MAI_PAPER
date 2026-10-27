@@ -15,3 +15,6 @@ code_paper/exhibits/out/
 client_secret.json
 *.pem
 .env
+
+# macOS
+.DS_Store
